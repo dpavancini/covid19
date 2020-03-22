@@ -1,5 +1,5 @@
 ---
-title: "Acompanhamento de casos Covid-19"
+title: "Acompanhamento Covid 19"
 output: github_document
 ---
 
