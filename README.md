@@ -3,13 +3,14 @@ Acompanhamento Covid 19
 
 Os dados são obtidos de [Centro Europeu de Controle de Doenças - ECDC](https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-2020-03-22.xlsx) e atualizado diariamente. Note que o link deve ser atualizado com a data mais recente em caso de download manual.
 
-Outras fontes e projetos brasileiros e internaionais de acompanhamento da epidemia:
+Outras fontes de projetos brasileiros e internacionais de acompanhamento da epidemia:
 
 -   <https://labs.wesleycota.com/sarscov2/br/>
 -   <https://covid-simulator.3778.care/>
 -   <https://www.worldometers.info/coronavirus/>
 -   <https://www.covidvisualizer.com/>
 -   <https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data>
+-   <https://github.com/peixebabel/COVID-19>
 
 Dados Gerais
 ------------
