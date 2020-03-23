@@ -27,6 +27,7 @@ Outras fontes de projetos brasileiros e internacionais de acompanhamento da epid
 * https://www.covidvisualizer.com/
 * https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
 * https://github.com/peixebabel/COVID-19
+* [Em formato Tableau](https://www.tableau.com/covid-19-coronavirus-data-resources)
 
 ```{r,echo=FALSE,warning=FALSE,results='hide',message=FALSE}
 # Please note that this script updates every day automatically using the time of your computer. Hence, it might show an error message if you try to download the file before we have updated it.
@@ -253,6 +254,94 @@ dados_selecionados_estat %>%
 theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 ```
 
+### Evolução por Estado
+
+Abaixo são feitos comparativos de Casos por Estados brasileiros a partir de dados compilados por [Wesley Cota](https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv). É sabido que os dados de Casos confirmados dependem muito da quantidade de testes realizados e dados de mortes são geralmente mais confiáveis. À medida que evolua a epidemia esperamos ter dados mais confiáveis.
+
+```{r,echo=F,warning=F,message=F}
+# Credido ao Wison Cota por fazer essa agregação
+casos_por_estado <- readr::read_csv("https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv")
+
+casos_por_estado_d0 <- casos_por_estado  %>% 
+  filter(totalCases > 0 ) %>% 
+  arrange(date,state) %>%
+  group_by(state) %>% 
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((newCases- lag(newCases))/lag(newCases))*100,
+         g_total_cases = ((totalCases- lag(totalCases))/lag(totalCases))*100
+        ) %>% 
+  select(date,state,days_from_first,g_new_cases,g_total_cases)
+
+casos_por_estado_d10 <- casos_por_estado  %>% 
+  filter(totalCases > 10 ) %>% 
+  arrange(date,state) %>%
+  group_by(state) %>% 
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,state,days_from_10th)
+
+
+
+casos_por_estado <- casos_por_estado %>% 
+  left_join(casos_por_estado_d0, by = c("date"= "date", "state" = "state")) %>% 
+  left_join(casos_por_estado_d10, by = c("date"= "date", "state" = "state"))
+```
+
+```{r,echo=F,warning=F,message=F}
+dados_rotulos <- casos_por_estado %>% 
+  filter(totalCases > 10 & state != 'TOTAL') %>%
+  group_by(state) %>% 
+  arrange(desc(totalCases)) %>% 
+  slice(1) 
+
+
+casos_por_estado %>% 
+  filter(totalCases > 10 & state != 'TOTAL') %>% 
+  ggplot(aes(x=days_from_10th, y=totalCases, color=state,label=state)) + geom_line(size=1)+ 
+  scale_y_log10()  + theme_minimal() + labs(title = paste("Evolução por estado - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+
+theme(legend.position="none",
+      plot.title = element_text(hjust = 0,size=12, face = "bold"),
+      axis.text = element_text(color = "#999999"),
+      axis.title = element_text(color = "#999999")) +
+  geom_label_repel(check_overlap = TRUE, data = dados_rotulos,show.legend = FALSE)
+
+# Com Facets
+casos_por_estado %>% 
+  pivot_longer(names_to = 'indicador',cols = c('newCases','totalCases','g_new_cases','g_total_cases'))%>% 
+  filter(state != 'TOTAL') %>% 
+  ggplot(aes(x=days_from_first, y=value)) + geom_bar(aes(x=days_from_first,y=value, fill=indicador), data= . %>% filter(indicador %in% c('newCases','totalCases')),stat='identity', position = 'dodge')+ facet_wrap(~state)+ scale_y_continuous(trans="pseudo_log")  + theme_minimal() + labs(title = paste("Evolução por estado - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 1º caso") + ylab("Casos confirmados")+ 
+  scale_fill_manual(name="Indicador", breaks = c("newCases", "totalCases"), 
+                    labels = c("Novos casos", "Casos Acumulados"), 
+                    values = c("#ff6a6a","grey"))+
+theme(legend.position="bottom",
+      plot.title = element_text(hjust = 0,size=12, face = "bold"),
+      axis.text = element_text(color = "#999999"),
+      axis.title = element_text(color = "#999999"))
+```
+
+```{r,echo=FALSE, message=F, warning=F}
+plot_by_state <- function(uf) {
+  message(paste("Plotando para"),uf)
+plot <- casos_por_estado %>% 
+  filter(state == uf) %>%  
+  pivot_longer(names_to = 'indicador',cols =      c('newCases','totalCases','g_new_cases','g_total_cases'))%>% 
+  ggplot(aes(x=days_from_first, y=value)) + geom_bar(aes(x=days_from_first,y=value, fill=indicador), data= . %>% filter(indicador %in% c('newCases','totalCases')),stat='identity', position = 'dodge')+
+theme_minimal() + labs(title = paste("Evolução em",uf," - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 1º caso") + ylab("Casos confirmados")+ 
+  scale_fill_manual(name="Indicador", breaks = c("newCases", "totalCases"), 
+                    labels = c("Novos casos", "Casos Acumulados"), 
+                    values = c("#ff6a6a","grey"))+
+theme(legend.position="bottom",
+      plot.title = element_text(hjust = 0,size=12, face = "bold"),
+      axis.text = element_text(color = "#999999"),
+      axis.title = element_text(color = "#999999"))
+
+return(plot)
+}
+
+estados <- casos_por_estado %>% filter(state != 'TOTAL') %>% select(state) %>% distinct()
+lapply(estados$state, plot_by_state)
+
+```
 
 
 ## Nota:

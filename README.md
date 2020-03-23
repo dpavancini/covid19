@@ -11,6 +11,7 @@ Outras fontes de projetos brasileiros e internacionais de acompanhamento da epid
 -   <https://www.covidvisualizer.com/>
 -   <https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data>
 -   <https://github.com/peixebabel/COVID-19>
+-   [Em formato Tableau](https://www.tableau.com/covid-19-coronavirus-data-resources)
 
 Dados Gerais
 ------------
@@ -38,6 +39,146 @@ Os gráficos abaixo trazem comparativos utilizando dados relativos ao tamanho da
 Já o gráfico abaixo compara uma estimativa de Casos com necessidade de internação de 20% (segundo estudo do Imperial College) e a capacidade hospitalar de cada país, considerando uma distribuição uniforme dos casos (diferente do atual caso italiano onde há concentração de casos na Lombardia e a taxa de ocupação de leitos nessa região é muito superior à média do país:
 
 ![](README_files/figure-markdown_github/unnamed-chunk-9-1.png)
+
+### Evolução por Estado
+
+Abaixo são feitos comparativos de Casos por Estados brasileiros a partir de dados compilados por [Wesley Cota](https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv). É sabido que os dados de Casos confirmados dependem muito da quantidade de testes realizados e dados de mortes são geralmente mais confiáveis. À medida que evolua a epidemia esperamos ter dados mais confiáveis.
+
+![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)![](README_files/figure-markdown_github/unnamed-chunk-11-2.png)
+
+    ## [[1]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-1.png)
+
+    ## 
+    ## [[2]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-2.png)
+
+    ## 
+    ## [[3]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-3.png)
+
+    ## 
+    ## [[4]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-4.png)
+
+    ## 
+    ## [[5]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-5.png)
+
+    ## 
+    ## [[6]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-6.png)
+
+    ## 
+    ## [[7]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-7.png)
+
+    ## 
+    ## [[8]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-8.png)
+
+    ## 
+    ## [[9]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-9.png)
+
+    ## 
+    ## [[10]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-10.png)
+
+    ## 
+    ## [[11]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-11.png)
+
+    ## 
+    ## [[12]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-12.png)
+
+    ## 
+    ## [[13]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-13.png)
+
+    ## 
+    ## [[14]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-14.png)
+
+    ## 
+    ## [[15]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-15.png)
+
+    ## 
+    ## [[16]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-16.png)
+
+    ## 
+    ## [[17]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-17.png)
+
+    ## 
+    ## [[18]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-18.png)
+
+    ## 
+    ## [[19]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-19.png)
+
+    ## 
+    ## [[20]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-20.png)
+
+    ## 
+    ## [[21]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-21.png)
+
+    ## 
+    ## [[22]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-22.png)
+
+    ## 
+    ## [[23]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-23.png)
+
+    ## 
+    ## [[24]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-24.png)
+
+    ## 
+    ## [[25]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-25.png)
+
+    ## 
+    ## [[26]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-26.png)
+
+    ## 
+    ## [[27]]
+
+![](README_files/figure-markdown_github/unnamed-chunk-12-27.png)
 
 Nota:
 -----
