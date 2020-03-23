@@ -4,7 +4,7 @@ Acompanhamento Covid 19
 Acompanhamento
 --------------
 
-Os dados são obtidos de [deste link](https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-) e atualizado diariamente.
+Os dados são obtidos de [Centro Europeu de Controle de Doenças - ECDC](https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-2020-03-22.xlsx) e atualizado diariamente. Note que o link deve ser atualizado com a data mais recente em caso de download manual.
 
 Outras fontes e projetos brasileiros e internaionais de acompanhamento da epidemia:
 
