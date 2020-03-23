@@ -20,6 +20,13 @@ options(scipen=999)
 
 Os dados são obtidos de [deste link](https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-) e atualizado diariamente.
 
+Outras fontes e projetos brasileiros e internaionais de acompanhamento da epidemia:
+
+* https://labs.wesleycota.com/sarscov2/br/
+* https://covid-simulator.3778.care/
+* https://www.worldometers.info/coronavirus/
+
+
 ```{r,echo=FALSE,warning=FALSE,results='hide'}
 # Please note that this script updates every day automatically using the time of your computer. Hence, it might show an error message if you try to download the file before we have updated it.
 
@@ -38,14 +45,58 @@ data <- read_excel(tf)
 
 ## Dados Gerais
 
+```{r,echo=FALSE,warning=FALSE}
+
+dados_preparados <- data %>% 
+  filter(Cases > 0 ) %>% 
+  arrange(DateRep,GeoId) %>%
+  group_by(GeoId) %>% 
+  mutate(sum_cases = cumsum(Cases),
+         sum_deaths = cumsum(Deaths),
+         days_from_first = as.Date(DateRep, format= "%Y-%m-%d") - as.Date(min(DateRep), format= "%Y-%m-%d"),
+         g_cases = ((Cases- lag(Cases))/lag(Cases))*100,
+         g_deaths = ((Deaths-lag(Deaths))/lag(Deaths))*100) %>% 
+  select(DateRep,GeoId,sum_cases,sum_deaths, days_from_first,g_cases,g_deaths)
+
+dados_completos <- data %>% 
+  left_join(dados_preparados, by= c("GeoId" = "GeoId", "DateRep" = "DateRep"))
+```
+
+
 O gráfico abaixo apresenta as linhas de crescimento dos casos confirmados e mortes por Covid 19 até o momento no mundo:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE,warning=FALSE}
 data %>% pivot_longer(cols=c(Cases,Deaths)) %>% ggplot(aes(x=DateRep, y=value)) +  
 geom_bar(aes(fill=name), position = "dodge",stat='identity') +
   xlab("Data") + ylab("Casos confirmados/Mortes")+
-  theme_minimal() +labs(title=paste("Casos confirmados e mortes no mundo - ", format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logarítimica.Os dados são atualizados diariamente.\n  Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + scale_fill_manual(name="", breaks = c("Cases","Deaths"),labels=c("Casos", "Mortes"), values = c("blue","red"))
+  theme_minimal() +labs(title=paste("Casos confirmados e mortes no mundo - ", format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n  Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + scale_fill_manual(name="", breaks = c("Cases","Deaths"),labels=c("Casos", "Mortes"), values = c("blue","red"))
 
+```
+
+
+### Brasil
+
+Para o caso brasileiro, o cenário atual é o seguinte:
+
+```{r, echo=FALSE,warning=FALSE}
+dados_brasil <- dados_completos %>% pivot_longer(cols=c(Cases,Deaths,sum_cases,sum_deaths,g_cases,g_deaths)) %>% filter(GeoId== 'BR' & DateRep > "2020-02-01") 
+
+dados_brasil %>% filter(name %in% c("Cases","Deaths")) %>% 
+  ggplot(aes(x=DateRep, y=value)) +  
+geom_bar(aes(fill=name), position = "dodge",stat='identity') +
+  xlab("Dia") + ylab("Casos confirmados/Mortes")+
+  theme_minimal() +labs(title=paste("Casos confirmados e mortes no Brasil por Dia- ", format(Sys.time(), "%d/%m/%Y")), caption = "Os dados são atualizados diariamente.\n  Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + scale_fill_manual(name="", breaks = c("Cases","Deaths"),labels=c("Casos", "Mortes"), values = c("blue","red")) 
+dados_brasil %>% filter(name %in% c("sum_cases","sum_deaths")) %>% 
+  ggplot(aes(x=DateRep, y=value)) +  
+geom_bar(aes(fill=name), position = "dodge",stat='identity') +
+  xlab("Dia") + ylab("Casos confirmados/Mortes")+
+  theme_minimal() +labs(title=paste("Casos e Mortes Acumulados ", format(Sys.time(), "%d/%m/%Y")), caption = "Os dados são atualizados diariamente.\n  Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + scale_fill_manual(name="", breaks = c("sum_cases","sum_deaths"),labels=c("Casos", "Mortes"), values = c("blue","red"))
+
+dados_brasil %>% filter(name %in% c("g_cases","g_deaths")) %>% 
+  ggplot(aes(x=DateRep, y=value)) +  
+geom_line(aes(color=name)) +
+  xlab("Dia") + ylab("Taxa de Crescimento")+
+  theme_minimal() +labs(title=paste("Taxa de Crescimento % (em relação ao dia anterior) ", format(Sys.time(), "%d/%m/%Y")), caption = "Os dados são atualizados diariamente.\n  Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + scale_color_manual(name="", breaks = c("g_cases","g_deaths"),labels=c("Casos", "Mortes"), values = c("blue","red"))
 ```
 
 
@@ -75,8 +126,12 @@ breaks <- c('US',"BR",'CN','FR','IT','ES','KR')
 prepared_data %>% 
   filter(GeoId %in% c('BR','US','CN','FR','IT','ES','KR')) %>% 
   ggplot(aes(x=days_from_first, y=sum_cases, color=GeoId, linetype=GeoId)) + geom_line(size=1)+ 
-  scale_y_log10() + xlim(0,80) + theme_minimal() + labs(title = paste("Evolução dos Casos Covid-19 - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logarítimica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 1º caso") + ylab("Casos confirmados") +
+  scale_y_log10() + xlim(0,80) + theme_minimal() + labs(title = paste("Evolução dos Casos Covid-19 - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 1º caso") + ylab("Casos confirmados") +
   scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","blue",'green','yellow','orange','grey',"pink"))+
   scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7))+
 theme(legend.position="bottom") 
 ```
+
+## Nota:
+
+Este projeto é de acesso público e meramente informativo. Qualquer dado deve ser validado com fontes oficiais.
