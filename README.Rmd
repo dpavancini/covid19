@@ -160,7 +160,7 @@ geom_line(aes(color=name)) +
 
 Para fins de comparação com estimativas internacionais, o gráfico abaixo apresenta a curva de casos confirmados cumulativa a partir do dia 0:
 
-```{r,echo=FALSE,warning=FALSE}
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
 dados_selecionados <- dados_completos %>% 
   filter(GeoId %in% c('BR','US','CN','FR','IT','ES','KR'))
 
@@ -168,11 +168,10 @@ dados_rotulos <- dados_selecionados %>%
   group_by(GeoId) %>% 
   arrange(desc(sum_cases)) %>% 
   slice(1)
-
 ```
 
 
-```{r,echo=FALSE,warning=FALSE}
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(ggrepel)
 # Plot
 seq_dates = seq(0,100,1)
@@ -249,7 +248,7 @@ dados_rotulos <- dados_selecionados_estat %>%
 
 dados_selecionados_estat %>% 
   filter(DateRep == max(DateRep)) %>% 
-  ggplot(aes(x=GeoId, y=med_beds, label=GeoId)) + geom_bar(aes(y=med_bed_need_est,fill ="med_bed_need_est"),fill="red",stat="identity",alpha=1) + geom_bar(stat='identity', alpha = 0.5)+ theme_minimal() + labs(title = paste("Total de Leitos e Ocupação de Leitos estimada/habitantes - ",format(Sys.time(), "%d/%m/%Y")), caption = "Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("País") + ylab("Leitos por 1000 habitantes")+
+  ggplot(aes(x=GeoId, y=med_beds, label=GeoId)) + geom_bar(aes(y=med_bed_need_est,fill ="med_bed_need_est"),fill="red",stat="identity",alpha=1) + geom_bar(stat='identity', alpha = 0.5)+ theme_minimal() + labs(title = paste("Total de Leitos e Ocupação de Leitos estimada/1000 habitantes - ",format(Sys.time(), "%d/%m/%Y")), caption = "Considerando uma taxa de hospitalização de 20% dos casos confirmados. Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("País") + ylab("Leitos por 1000 habitantes")+
 theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 ```
 

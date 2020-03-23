@@ -26,13 +26,7 @@ Para o caso brasileiro, o cenário atual é o seguinte:
 
 Para fins de comparação com estimativas internacionais, o gráfico abaixo apresenta a curva de casos confirmados cumulativa a partir do dia 0:
 
-    ## Don't know how to automatically pick scale for object of type difftime. Defaulting to continuous.
-
-![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
-
-    ## Don't know how to automatically pick scale for object of type difftime. Defaulting to continuous.
-
-![](README_files/figure-markdown_github/unnamed-chunk-6-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)![](README_files/figure-markdown_github/unnamed-chunk-6-2.png)
 
 ### Dados Por População
 
