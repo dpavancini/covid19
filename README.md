@@ -18,7 +18,7 @@ Dados Gerais
 
 O gráfico abaixo apresenta as linhas de crescimento dos casos confirmados e mortes por Covid 19 até o momento no mundo:
 
-![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)![](README_files/figure-markdown_github/unnamed-chunk-3-2.png)![](README_files/figure-markdown_github/unnamed-chunk-3-3.png)![](README_files/figure-markdown_github/unnamed-chunk-3-4.png)
 
 ### Brasil
 
@@ -46,139 +46,7 @@ Abaixo são feitos comparativos de Casos por Estados brasileiros a partir de dad
 
 ![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)![](README_files/figure-markdown_github/unnamed-chunk-11-2.png)
 
-    ## [[1]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-1.png)
-
-    ## 
-    ## [[2]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-2.png)
-
-    ## 
-    ## [[3]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-3.png)
-
-    ## 
-    ## [[4]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-4.png)
-
-    ## 
-    ## [[5]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-5.png)
-
-    ## 
-    ## [[6]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-6.png)
-
-    ## 
-    ## [[7]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-7.png)
-
-    ## 
-    ## [[8]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-8.png)
-
-    ## 
-    ## [[9]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-9.png)
-
-    ## 
-    ## [[10]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-10.png)
-
-    ## 
-    ## [[11]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-11.png)
-
-    ## 
-    ## [[12]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-12.png)
-
-    ## 
-    ## [[13]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-13.png)
-
-    ## 
-    ## [[14]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-14.png)
-
-    ## 
-    ## [[15]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-15.png)
-
-    ## 
-    ## [[16]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-16.png)
-
-    ## 
-    ## [[17]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-17.png)
-
-    ## 
-    ## [[18]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-18.png)
-
-    ## 
-    ## [[19]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-19.png)
-
-    ## 
-    ## [[20]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-20.png)
-
-    ## 
-    ## [[21]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-21.png)
-
-    ## 
-    ## [[22]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-22.png)
-
-    ## 
-    ## [[23]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-23.png)
-
-    ## 
-    ## [[24]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-24.png)
-
-    ## 
-    ## [[25]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-25.png)
-
-    ## 
-    ## [[26]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-26.png)
-
-    ## 
-    ## [[27]]
-
-![](README_files/figure-markdown_github/unnamed-chunk-12-27.png)
+![](README_files/figure-markdown_github/unnamed-chunk-12-1.png)![](README_files/figure-markdown_github/unnamed-chunk-12-2.png)![](README_files/figure-markdown_github/unnamed-chunk-12-3.png)![](README_files/figure-markdown_github/unnamed-chunk-12-4.png)![](README_files/figure-markdown_github/unnamed-chunk-12-5.png)![](README_files/figure-markdown_github/unnamed-chunk-12-6.png)![](README_files/figure-markdown_github/unnamed-chunk-12-7.png)![](README_files/figure-markdown_github/unnamed-chunk-12-8.png)![](README_files/figure-markdown_github/unnamed-chunk-12-9.png)![](README_files/figure-markdown_github/unnamed-chunk-12-10.png)![](README_files/figure-markdown_github/unnamed-chunk-12-11.png)![](README_files/figure-markdown_github/unnamed-chunk-12-12.png)![](README_files/figure-markdown_github/unnamed-chunk-12-13.png)![](README_files/figure-markdown_github/unnamed-chunk-12-14.png)![](README_files/figure-markdown_github/unnamed-chunk-12-15.png)![](README_files/figure-markdown_github/unnamed-chunk-12-16.png)![](README_files/figure-markdown_github/unnamed-chunk-12-17.png)![](README_files/figure-markdown_github/unnamed-chunk-12-18.png)![](README_files/figure-markdown_github/unnamed-chunk-12-19.png)![](README_files/figure-markdown_github/unnamed-chunk-12-20.png)![](README_files/figure-markdown_github/unnamed-chunk-12-21.png)![](README_files/figure-markdown_github/unnamed-chunk-12-22.png)![](README_files/figure-markdown_github/unnamed-chunk-12-23.png)![](README_files/figure-markdown_github/unnamed-chunk-12-24.png)![](README_files/figure-markdown_github/unnamed-chunk-12-25.png)![](README_files/figure-markdown_github/unnamed-chunk-12-26.png)![](README_files/figure-markdown_github/unnamed-chunk-12-27.png)
 
 Nota:
 -----
