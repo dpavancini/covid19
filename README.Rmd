@@ -4,7 +4,7 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE,message=FALSE)
 #these libraries are necessary
 library(readxl)
 library(httr)
@@ -264,7 +264,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))+geom_labe
 
 Outro ponto muitas vezes levantado é a "Taxa de duplicação", isto é, quantos dias levaria para dobrar o número de casos/mortes seguindo a taxa de crescimento atual.
 
-```{r}
+```{r,echo=FALSE,warning=FALSE}
 
 x_max = max(dados_selecionados$days_from_first,na.rm=T)
 

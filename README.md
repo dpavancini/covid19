@@ -32,26 +32,6 @@ Para fins de comparação com estimativas internacionais, o gráfico abaixo apre
 
 Outro ponto muitas vezes levantado é a "Taxa de duplicação", isto é, quantos dias levaria para dobrar o número de casos/mortes seguindo a taxa de crescimento atual.
 
-``` r
-x_max = max(dados_selecionados$days_from_first,na.rm=T)
-
-dados_selecionados %>% 
-  ggplot(aes(x=days_from_first, y=d_rate_cases, color=GeoId, linetype=GeoId,label=GeoId)) + geom_line(size=1)+ 
-  scale_y_continuous(trans="pseudo_log") +
-  scale_y_log10() +
- theme_minimal() + labs(title = paste("Taxa de duplicação de Casos - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 1º caso") + ylab("Dias para duplicar") +
-  scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
-  scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7))+
-theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))+geom_label_repel(data = dados_rotulos,show.legend = FALSE) + custom_theme + geom_hline(yintercept=2, color = "grey") + geom_hline(yintercept=5, color = "grey") + annotate("text", x = c(x_max - 5,x_max -5), y = c(2,5), label = c("2 dias para duplicar","5 dias para duplicar"), size=3, color = "grey",vjust=-1)
-```
-
-    ## Scale for 'y' is already present. Adding another scale for 'y', which
-    ## will replace the existing scale.
-
-    ## Don't know how to automatically pick scale for object of type difftime. Defaulting to continuous.
-
-    ## Warning: Removed 310 rows containing missing values (geom_path).
-
 ![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 ### Dados Por População
