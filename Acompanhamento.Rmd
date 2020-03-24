@@ -1,0 +1,290 @@
+---
+title: "Acompanhamento"
+author: "Daniel Avancini"
+date: "March 24, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#these libraries are necessary
+library(readxl)
+library(httr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggrepel)
+library(plotly)
+
+# library(ggflags)
+options(scipen=999)
+options(browser='false')
+
+# Load Chart Studio API
+Sys.setenv("plotly_username"=Sys.getenv("PLOTLY_USERNAME"))
+Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
+```
+
+## Acompanhamento COVID-19
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Please note that this script updates every day automatically using the time of your computer. Hence, it might show an error message if you try to download the file before we have updated it.
+
+#create the URL where the dataset is stored with automatic updates every day
+
+readUrl <- function() {
+    out <- tryCatch(
+        {
+            # Just to highlight: if you want to use more than one 
+            # R expression in the "try" part then you'll have to 
+            # use curly brackets.
+            # 'tryCatch()' will return the last evaluated expression 
+            # in case the "try" part was completed successfully
+
+            message("Obtendo dados mais recentes da ECDC")
+
+            url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(Sys.Date()), ".xlsx", sep = "")
+
+            #download the dataset from the website to a local temporary file
+            GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
+            data <- read_excel(tf)
+            # The return value of `readLines()` is the actual value 
+            # that will be returned in case there is no condition 
+            # (e.g. warning or error). 
+            # You don't need to state the return value via `return()` as code 
+            # in the "try" part is not wrapped insided a function (unlike that
+            # for the condition handlers for warnings and error below)
+            
+        },
+        error=function(cond) {
+            message("Arquivo ainda não atualizado:")
+            message("Utilizando dados do dia anterior")
+            # Choose a return value in case of error
+             url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(Sys.Date() - 1), ".xlsx", sep = "")
+
+            #download the dataset from the website to a local temporary file
+            tf <- tempfile(fileext = ".xlsx") 
+            GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf))
+            data <- read_excel(tf)
+            return(data)
+            
+        },
+        warning=function(cond) {
+            message("URL caused a warning:")
+            message("Here's the original warning message:")
+            message(cond)
+            # Choose a return value in case of warning
+            return(NULL)
+        },
+        finally={
+        # NOTE:
+        # Here goes everything that should be executed at the end,
+        # regardless of success or error.
+        # If you want more than one expression to be executed, then you 
+        # need to wrap them in curly brackets ({...}); otherwise you could
+        # just have written 'finally=<expression>' 
+        }
+    )    
+    return(out)
+}
+
+data <- readUrl()
+
+# Prepare data
+
+dados_preparados_d0 <- data %>% 
+  filter(Cases > 0 ) %>% 
+  arrange(DateRep,GeoId) %>%
+  group_by(GeoId) %>% 
+  mutate(sum_cases = cumsum(Cases),
+         sum_deaths = cumsum(Deaths),
+         days_from_first = as.Date(DateRep, format= "%Y-%m-%d") - as.Date(min(DateRep), format= "%Y-%m-%d"),
+         g_cases = ((Cases- lag(Cases))/lag(Cases))*100,
+         g_deaths = ((Deaths-lag(Deaths))/lag(Deaths))*100) %>% 
+  select(DateRep,GeoId,sum_cases,sum_deaths, days_from_first,g_cases,g_deaths)
+
+dados_preparados_d100 <- dados_preparados_d0 %>% 
+  filter(sum_cases > 100 ) %>% 
+  arrange(DateRep,GeoId) %>%
+  group_by(GeoId) %>% 
+  mutate(days_from_100th = as.Date(DateRep, format= "%Y-%m-%d") - as.Date(min(DateRep), format= "%Y-%m-%d")) %>% 
+  select(DateRep,GeoId,days_from_100th)
+
+dados_completos <- data %>% 
+  left_join(dados_preparados_d0, by= c("GeoId" = "GeoId", "DateRep" = "DateRep")) %>% 
+  left_join(dados_preparados_d100, by= c("GeoId" = "GeoId", "DateRep" = "DateRep"))
+```
+
+Esta página busca servir como um compilado de gráficos informativos sobre a evolução da epidemia de coronavírus (COVID-19) no mundo, no Brasil em regiões brasileiras. Ela será atualizada conforme novos dados fiquem disponíveis.
+
+Considerando a evolução dos casos confirmados em números absolutos a partir do Dia 0, o Brasil segue uma evolução semelhante ao observado na China em Janeiro, porém com uma distribuição maior entre regiões em comparação com o caso Chinês onde a região de Hubei foi duramente atingida.
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#Create labels
+dados_selecionados <- dados_completos %>% 
+  filter(GeoId %in% c('BR','US','CN','FR','IT','ES','KR'))
+
+dados_rotulos <- dados_selecionados %>% 
+  group_by(GeoId) %>% 
+  arrange(desc(sum_cases)) %>% 
+  slice(1)
+
+
+labels <- c( "EUA","Brasil","China", "França","Itália","Espanha","Coréia do Sul")
+breaks <- c('US',"BR",'CN','FR','IT','ES','KR')
+p <- dados_selecionados %>% 
+  ggplot(aes(x=days_from_first, y=sum_cases, color=GeoId, linetype=GeoId,label=GeoId)) + geom_line(size=1) + 
+  scale_y_log10() +
+  theme_minimal() +
+  labs(title = paste("Evolução após 1º caso, Covid-19 - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 1º caso") + ylab("Casos confirmados") +
+  scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e")) +
+  scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7)) +
+theme(legend.position="bottom",plot.title = element_text(hjust = 0.5)) 
+
+
+  # Upload to chart studio
+api_create(p, filename = "covid-world-1st-plot")
+```
+
+Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de tendências, notamos que a inclinação da curva brasileira é um pouco menor que de países onde a doença está em estágio crítico como Itália e Espanha.
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#Create labels
+dados_selecionados <- dados_completos %>% 
+  filter(GeoId %in% c('BR','US','CN','FR','IT','ES','KR'))
+
+dados_rotulos <- dados_selecionados %>% 
+  group_by(GeoId) %>% 
+  arrange(desc(sum_cases)) %>% 
+  slice(1)
+
+
+labels <- c( "EUA","Brasil","China", "França","Itália","Espanha","Coréia do Sul")
+breaks <- c('US',"BR",'CN','FR','IT','ES','KR')
+p <- dados_selecionados %>% 
+  ggplot(aes(x=days_from_100th, y=sum_cases, color=GeoId, linetype=GeoId,label=GeoId)) + geom_line(size=1)+ 
+  scale_y_log10()  + theme_minimal() + labs(title = paste("Evolução após 100º caso,Covid-19 - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 100º caso") + ylab("Casos confirmados") +
+  scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
+  scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7))+
+theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
+
+p %>% ggplotly()
+
+  # Upload to chart studio
+api_create(p, filename = "covid-world-100th-plot")
+```
+
+Um ponto importante é considerar a evolução da epidemia em termos relativos, isto é, qual o percentual de pessoas infectadas na população de uma região. Esse indicador é chamado de incidência, ou quando considerado em relação ao número de pessoas expostas, é chamado de ~taxa de ataque~. Como, em tese, não há pessoas com imunidade conhecida ao COVID-19 é possível dizer que ambas as taxas são aproximadamente iguais.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(wbstats)
+bm_pop <- wb(country = "all", indicator = c("SP.POP.TOTL","SH.MED.BEDS.ZS"),mrv=1,return_wide = T)
+bm_med_beds <- wb(country = "all", indicator = c("SH.MED.BEDS.ZS"),return_wide = T) %>% 
+  group_by(iso2c) %>% 
+  arrange(desc(date)) %>% 
+  slice(1)
+
+dados_com_estatisticas <- dados_completos %>% 
+  left_join(bm_pop %>% select(population = "SP.POP.TOTL", iso2c)
+              ,by = c("GeoId" = "iso2c")) %>% 
+  left_join(bm_med_beds %>% select(med_beds = "SH.MED.BEDS.ZS", iso2c)
+              ,by = c("GeoId" = "iso2c"))
+
+dados_com_estatisticas <- dados_com_estatisticas %>% 
+  mutate(cases_per_1000 = sum_cases/(population/1000),
+         med_bed_need_est = cases_per_1000 * 0.2)
+
+dados_selecionados_estat <- dados_com_estatisticas %>% 
+  filter(GeoId %in% c('BR','US','CN','FR','IT','ES','KR'))
+
+
+dados_rotulos <- dados_selecionados_estat %>% 
+  filter(GeoId %in% c('BR','US','CN','FR','IT','ES','KR')) %>%
+  group_by(GeoId) %>% 
+  arrange(desc(cases_per_1000)) %>% 
+  slice(1) 
+
+p<- dados_selecionados_estat %>% 
+  ggplot(aes(x=days_from_100th, y=cases_per_1000, color=GeoId, linetype=GeoId, label=GeoId)) + geom_line(size=1)+ 
+  xlim(0,80)+ labs(title = paste("Casos por 1000 habitantes - ",format(Sys.time(), "%d/%m/%Y")), caption = "Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 100º caso") + ylab("Casos confirmados/1000 habitantes") +
+  scale_color_manual(name="País",labels=labels,   breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
+  scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7)) +theme_minimal()
+
+p %>% ggplotly()
+
+api_create(p, filename = "covid-world-attack-plot")
+```
+
+
+## Por regiões brasileiras
+
+Quando observamos o cenário por região brasileira, notamos que embora SP apresente a maior quantidade de Casos Confirmados, outros estados estão em curvas semelhantes porém com algum atraso. Isso é esperado pois em teoria não há motivo para que a doença se espalhe mais ou menos entre diferentes populações. A velocidade do espalhamento da epidemia pode depender de concentração populacional, comportamentos regionais e, sobretudo, das medidas de distanciamento sociais adotadas em cada região. Ao longo das próximas semanas poderemos ter uma ideia de como essas medidas estão surtindo efeito em cada estado brasileiro. Os dados por estados foram compilados por [Wesley Cota](https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv) e são mostrados para estados com mais de 10 casos confirmados.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Credido ao Wison Cota por fazer essa agregação
+casos_por_estado <- readr::read_csv("https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv")
+
+casos_por_estado_d0 <- casos_por_estado  %>% 
+  filter(totalCases > 0 ) %>% 
+  arrange(date,state) %>%
+  group_by(state) %>% 
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((newCases- lag(newCases))/lag(newCases))*100,
+         g_total_cases = ((totalCases- lag(totalCases))/lag(totalCases))*100
+        ) %>% 
+  select(date,state,days_from_first,g_new_cases,g_total_cases)
+
+casos_por_estado_d10 <- casos_por_estado  %>% 
+  filter(totalCases > 10 ) %>% 
+  arrange(date,state) %>%
+  group_by(state) %>% 
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,state,days_from_10th)
+
+
+
+casos_por_estado <- casos_por_estado %>% 
+  left_join(casos_por_estado_d0, by = c("date"= "date", "state" = "state")) %>% 
+  left_join(casos_por_estado_d10, by = c("date"= "date", "state" = "state"))
+
+
+dados_rotulos <- casos_por_estado %>% 
+  filter(totalCases > 10 & state != 'TOTAL') %>%
+  group_by(state) %>% 
+  arrange(desc(totalCases)) %>% 
+  slice(1) 
+
+p_lin <- casos_por_estado %>% 
+  filter(totalCases > 10 & state != 'TOTAL') %>% 
+  ggplot(aes(x=days_from_10th, y=totalCases, color=state,linetype=state,label=state)) + geom_line(size=1)+ 
+  labs(title = paste("Evolução por estado (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+
+p_lin %>% ggplotly()
+
+api_create(p_lin, filename = "covid-states-lin-plot")
+
+### Log scale
+
+p_log <- casos_por_estado %>% 
+  filter(totalCases > 10 & state != 'TOTAL') %>% 
+  ggplot(aes(x=days_from_10th, y=totalCases, color=state,linetype=state,label=state)) + geom_line(size=1)+ 
+  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por estado (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+
+p_log %>% ggplotly()
+
+api_create(p_log, filename = "covid-states-log-plot")
+```
+
+## Códigos
+
+Os códigos utilizados e análises estão disponíveis em https://github.com/dpavancini/covid19.
+
+
+
+
+
+

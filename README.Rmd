@@ -12,7 +12,8 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(ggrepel)
-# devtools::install_github("rensa/ggflags")
+library(plotly)
+
 # library(ggflags)
 options(scipen=999)
 
@@ -116,8 +117,10 @@ dados_preparados_d0 <- data %>%
          sum_deaths = cumsum(Deaths),
          days_from_first = as.Date(DateRep, format= "%Y-%m-%d") - as.Date(min(DateRep), format= "%Y-%m-%d"),
          g_cases = ((Cases- lag(Cases))/lag(Cases))*100,
-         g_deaths = ((Deaths-lag(Deaths))/lag(Deaths))*100) %>% 
-  select(DateRep,GeoId,sum_cases,sum_deaths, days_from_first,g_cases,g_deaths)
+         g_deaths = ((Deaths-lag(Deaths))/lag(Deaths))*100,
+         d_rate_cases = sum_cases/Cases,
+         d_rate_deaths = sum_deaths/Deaths) %>% 
+  select(DateRep,GeoId,sum_cases,sum_deaths, days_from_first,g_cases,g_deaths,d_rate_cases,d_rate_deaths)
 
 dados_preparados_d100 <- dados_preparados_d0 %>% 
   filter(sum_cases > 100 ) %>% 
@@ -200,7 +203,7 @@ plot_data_total <-  dados_completos %>%
 Para o caso brasileiro, o cenário atual é o seguinte:
 
 ```{r, echo=FALSE,warning=FALSE}
-dados_brasil <- dados_completos %>% pivot_longer(cols=c(Cases,Deaths,sum_cases,sum_deaths,g_cases,g_deaths)) %>% filter(GeoId== 'BR' & DateRep > "2020-02-01") 
+dados_brasil <- dados_completos %>% pivot_longer(cols=c(Cases,Deaths,sum_cases,sum_deaths,g_cases,g_deaths,d_rate_cases,d_rate_deaths)) %>% filter(GeoId== 'BR' & DateRep > "2020-02-01") 
 
 dados_brasil %>% filter(name %in% c("Cases","Deaths")) %>% 
   ggplot(aes(x=DateRep, y=value)) +  
@@ -250,7 +253,6 @@ dados_selecionados %>%
 theme(legend.position="bottom",plot.title = element_text(hjust = 0.5)) +geom_label_repel(check_overlap = TRUE, data = dados_rotulos,show.legend = FALSE) + custom_theme
 
 
-
 dados_selecionados %>% 
   ggplot(aes(x=days_from_100th, y=sum_cases, color=GeoId, linetype=GeoId,label=GeoId)) + geom_line(size=1)+ 
   scale_y_log10()  + theme_minimal() + labs(title = paste("Evolução após 100º caso,Covid-19 - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 100º caso") + ylab("Casos confirmados") +
@@ -258,7 +260,22 @@ dados_selecionados %>%
   scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7))+
 theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))+geom_label_repel(check_overlap = TRUE, data = dados_rotulos,show.legend = FALSE) + custom_theme
 
+```
 
+Outro ponto muitas vezes levantado é a "Taxa de duplicação", isto é, quantos dias levaria para dobrar o número de casos/mortes seguindo a taxa de crescimento atual.
+
+```{r}
+
+x_max = max(dados_selecionados$days_from_first,na.rm=T)
+
+dados_selecionados %>% 
+  ggplot(aes(x=days_from_first, y=d_rate_cases, color=GeoId, linetype=GeoId,label=GeoId)) + geom_line(size=1)+ 
+  scale_y_continuous(trans="pseudo_log") +
+  scale_y_log10() +
+ theme_minimal() + labs(title = paste("Taxa de duplicação de Casos - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 1º caso") + ylab("Dias para duplicar") +
+  scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
+  scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7))+
+theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))+geom_label_repel(data = dados_rotulos,show.legend = FALSE) + custom_theme + geom_hline(yintercept=2, color = "grey") + geom_hline(yintercept=5, color = "grey") + annotate("text", x = c(x_max - 5,x_max -5), y = c(2,5), label = c("2 dias para duplicar","5 dias para duplicar"), size=3, color = "grey",vjust=-1)
 ```
 
 ### Dados Por População
@@ -316,6 +333,11 @@ dados_selecionados_estat %>%
   ggplot(aes(x=GeoId, y=med_beds, label=GeoId)) + geom_bar(aes(y=med_bed_need_est,fill ="med_bed_need_est"),fill="red",stat="identity",alpha=1) + geom_bar(stat='identity', alpha = 0.5)+  labs(title = paste("Total de Leitos e Ocupação de Leitos estimada/1000 habitantes - ",format(Sys.time(), "%d/%m/%Y")), caption = "Considerando uma taxa de hospitalização de 20% dos casos confirmados. Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("País") + ylab("Leitos por 1000 habitantes")+ custom_theme
 ```
 
+
+
+
+
+
 ### Evolução por Estado
 
 Abaixo são feitos comparativos de Casos por Estados brasileiros a partir de dados compilados por [Wesley Cota](https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv). É sabido que os dados de Casos confirmados dependem muito da quantidade de testes realizados e dados de mortes são geralmente mais confiáveis. À medida que evolua a epidemia esperamos ter dados mais confiáveis.
@@ -324,15 +346,18 @@ Abaixo são feitos comparativos de Casos por Estados brasileiros a partir de dad
 # Credido ao Wison Cota por fazer essa agregação
 casos_por_estado <- readr::read_csv("https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv")
 
+
+
 casos_por_estado_d0 <- casos_por_estado  %>% 
   filter(totalCases > 0 ) %>% 
   arrange(date,state) %>%
   group_by(state) %>% 
   mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
-         g_new_cases = ((newCases- lag(newCases))/lag(newCases))*100,
-         g_total_cases = ((totalCases- lag(totalCases))/lag(totalCases))*100
-        ) %>% 
-  select(date,state,days_from_first,g_new_cases,g_total_cases)
+         g_new_cases = (newCases- lag(newCases))/lag(newCases)*100,
+         g_total_cases = ((totalCases- lag(totalCases))/lag(totalCases))*100,
+         d_rate_cases = ifelse(newCases == 0,NA, totalCases/newCases)
+          ) %>% 
+  select(date,state,days_from_first,g_new_cases,g_total_cases,d_rate_cases)
 
 casos_por_estado_d10 <- casos_por_estado  %>% 
   filter(totalCases > 10 ) %>% 
@@ -341,8 +366,6 @@ casos_por_estado_d10 <- casos_por_estado  %>%
   mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
         ) %>% 
   select(date,state,days_from_10th)
-
-
 
 casos_por_estado <- casos_por_estado %>% 
   left_join(casos_por_estado_d0, by = c("date"= "date", "state" = "state")) %>% 
@@ -373,6 +396,22 @@ casos_por_estado %>%
                     values = c("#ff6a6a","grey"))+ custom_theme
 
 ```
+
+E a taxa de duplicação por estado:
+
+```{r echo=F,warning=F,message=F}
+  x_max = max(casos_por_estado$days_from_10th, na.rm=T)
+  casos_por_estado %>%
+  filter(totalCases > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=d_rate_cases, color=state,label=state)) +
+  geom_line(size=1) + 
+  scale_y_continuous(trans="pseudo_log") +
+ theme_minimal() + labs(title = paste("Taxa de duplicação de Casos - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica.Os dados são atualizados diariamente.\n Fonte:https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide") + xlab("Dias desde 10º caso") + ylab("Dias para duplicar") +
+  geom_label_repel(check_overlap = TRUE, data = dados_rotulos,show.legend = FALSE) + custom_theme + geom_hline(yintercept=2, color = "grey") + geom_hline(yintercept=5, color = "grey") + annotate("text", x = c(x_max - 5,x_max -5), y = c(2,5), label = c("2 dias para duplicar","5 dias para duplicar"), size=3, color = "grey",vjust=-1)
+```
+
+
+
 
 ```{r,echo=FALSE, message=F, warning=F, results="hide"}
 plot_by_state <- function(uf) {
