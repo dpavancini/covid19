@@ -24,6 +24,10 @@ options(browser='false')
 # Load Chart Studio API
 Sys.setenv("plotly_username"=Sys.getenv("PLOTLY_USERNAME"))
 Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
+
+# If prod = T, publish plots online
+prod = T
+
 ```
 
 ## Acompanhamento COVID-19
@@ -145,7 +149,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 
 
   # Upload to chart studio
-api_create(p, filename = "covid-world-1st-plot")
+if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
 ```
 
 Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de tendências, notamos que a inclinação da curva brasileira é um pouco menor que de países onde a doença está em estágio crítico como Itália e Espanha.
@@ -174,7 +178,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 p %>% ggplotly()
 
   # Upload to chart studio
-api_create(p, filename = "covid-world-100th-plot")
+if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
 ```
 
 Um ponto importante é considerar a evolução da epidemia em termos relativos, isto é, qual o percentual de pessoas infectadas na população de uma região. Esse indicador é chamado de incidência, ou quando considerado em relação ao número de pessoas expostas, é chamado de ~taxa de ataque~. Como, em tese, não há pessoas com imunidade conhecida ao COVID-19 é possível dizer que ambas as taxas são aproximadamente iguais.
@@ -215,7 +219,7 @@ p<- dados_selecionados_estat %>%
 
 p %>% ggplotly()
 
-api_create(p, filename = "covid-world-attack-plot")
+if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
 ```
 
 
@@ -276,7 +280,7 @@ p_log <- casos_por_estado %>%
 
 p_log %>% ggplotly()
 
-api_create(p_log, filename = "covid-states-log-plot")
+if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
 ```
 
 ## Códigos
