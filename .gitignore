@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 .Rproj
-.Renviron
+*.Renviron
+Renviron
+
 /raw-data

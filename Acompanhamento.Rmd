@@ -230,6 +230,11 @@ Quando observamos o cenário por região brasileira, notamos que embora SP apres
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Credido ao Wison Cota por fazer essa agregação
 casos_por_estado <- readr::read_csv("https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv")
+pop_por_cidade <-  readr::read_csv("cidades.csv")
+pop_por_estado <- pop_por_cidade %>% 
+  group_by(uf) %>% 
+  summarise(pop_2019 = sum(Pop_2019))
+
 
 casos_por_estado_d0 <- casos_por_estado  %>% 
   filter(totalCases > 0 ) %>% 
@@ -253,7 +258,9 @@ casos_por_estado_d10 <- casos_por_estado  %>%
 
 casos_por_estado <- casos_por_estado %>% 
   left_join(casos_por_estado_d0, by = c("date"= "date", "state" = "state")) %>% 
-  left_join(casos_por_estado_d10, by = c("date"= "date", "state" = "state"))
+  left_join(casos_por_estado_d10, by = c("date"= "date", "state" = "state")) %>% 
+  left_join(pop_por_estado, by = c("state" = "uf")) %>% 
+  mutate(total_cases_pop = totalCases/(pop_2019 / 100000))
 
 
 dados_rotulos <- casos_por_estado %>% 
@@ -263,24 +270,42 @@ dados_rotulos <- casos_por_estado %>%
   slice(1) 
 
 p_lin <- casos_por_estado %>% 
-  filter(totalCases > 10 & state != 'TOTAL') %>% 
+  filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
   ggplot(aes(x=days_from_10th, y=totalCases, color=state,linetype=state,label=state)) + geom_line(size=1)+ 
   labs(title = paste("Evolução por estado (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
 
 p_lin %>% ggplotly()
 
-api_create(p_lin, filename = "covid-states-lin-plot")
+if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
 
 ### Log scale
-
+x_seq <-data_frame(days_from_10th = seq(0,100,1)) %>% 
+  mutate(
+    y_log_1d = 10 + days_from_10th * 2,
+    y_log_2d = 10 + days_from_10th * log2(2),
+    y_log_5d = 10 + days_from_10th * log2(5),                                                                                                 y_log_10d = 10 + days_from_10th * log2(10) )      
+  
+  
 p_log <- casos_por_estado %>% 
-  filter(totalCases > 10 & state != 'TOTAL') %>% 
-  ggplot(aes(x=days_from_10th, y=totalCases, color=state,linetype=state,label=state)) + geom_line(size=1)+ 
-  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por estado (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+  filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
+  ggplot(aes(x=days_from_10th, y=totalCases, color=state,linetype=state,label=state)) + geom_line(size=1)) + scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por estado (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal() 
 
 p_log %>% ggplotly()
 
 if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
+
+
+## Per 100.000
+
+p_lin_1000 <- casos_por_estado %>% 
+  filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
+  ggplot(aes(x=days_from_10th, y=total_cases_pop, color=state,linetype=state,label=state)) + geom_line(size=1)+ 
+  labs(title = paste("Casos por 100mil/hab (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+
+p_lin_1000 %>% ggplotly()
+
+if (prod == TRUE) {api_create(p_lin, filename = "covid-states-pop-lin-plot")}
+
 ```
 
 ## Códigos
