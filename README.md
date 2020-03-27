@@ -16,6 +16,9 @@ da
   - <https://www.covidvisualizer.com/>
   - <https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data>
   - <https://github.com/peixebabel/COVID-19>
+  - <https://coronavirus.jhu.edu/map.html>
+  - <https://ciis.fmrp.usp.br/covid19/analise-municipios/>
+  - <https://covid19br.github.io/index.html>
   - [Em formato
     Tableau](https://www.tableau.com/covid-19-coronavirus-data-resources)
 
