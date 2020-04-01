@@ -19,6 +19,7 @@ da
   - <https://coronavirus.jhu.edu/map.html>
   - <https://ciis.fmrp.usp.br/covid19/analise-municipios/>
   - <https://covid19br.github.io/index.html>
+  - <https://covid.saude.gov.br/>
   - [Em formato
     Tableau](https://www.tableau.com/covid-19-coronavirus-data-resources)
 
