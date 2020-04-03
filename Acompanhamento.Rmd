@@ -16,7 +16,11 @@ library(dplyr)
 library(tidyr)
 library(ggrepel)
 library(plotly)
-
+library(sf)
+library(leaflet)
+library(jsonlite)
+library(brazilmaps)
+library(gganimate)
 # library(ggflags)
 options(scipen=999)
 options(browser='false')
@@ -94,7 +98,9 @@ readUrl <- function() {
 }
 
 data <- readUrl()
-
+data <- data %>% select(DateRep = dateRep, Day = day, Month = month, Year = year, Cases = cases, Deaths = deaths, 
+                        CountriesAndTerritories = countriesAndTerritories, GeoId = geoId, 
+                        CountryterritoryCode = countryterritoryCode, PopData2018 = popData2018)
 # Prepare data
 
 dados_preparados_d0 <- data %>% 
@@ -314,6 +320,154 @@ p_lin_1000 %>% ggplotly()
 if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
 
 ```
+
+# No estado de Santa Catarina
+
+
+Olhando para o estado de Santa Catarina, com dados disponibilizados pelas [Secretarias de Saúde Estaduais](https://brasil.io/dataset/covid19/caso), podemos avaliar a evolução dos casos no estado.
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,include = FALSE}
+## api for update data of Covid19 cases
+read_CityDataCovid <- function() {
+  # read api url for update  
+  url <- "https://brasil.io/api/dataset/covid19/caso/data?format=json"
+  tf <- GET(url)
+  
+  my_content <- httr::content(tf, as = 'text')
+  my_content_from_json <- jsonlite::fromJSON(my_content)
+  out<- my_content_from_json$results
+  # verify more pages of data and get all
+  while(!is.null(my_content_from_json$`next`)){
+    url <- my_content_from_json$`next`
+    tf <- GET(url)
+    my_content <- httr::content(tf, as = 'text')
+    my_content_from_json <- jsonlite::fromJSON(my_content)
+    results_df_np<- my_content_from_json$results
+    out <- bind_rows(out, results_df_np)
+  }
+    return(out)
+}
+# get data
+data <- read_CityDataCovid()
+data <- data %>% filter(state == "SC"  & place_type == "city")
+data$date <- as.Date(data$date)
+
+# lat/lng data of cities
+cidade_latlng <- read.csv("municipios.csv")
+cidade_latlng <- cidade_latlng %>% select(codigo_ibge = 1, lat = latitude, lng = longitude)
+cidade_latlng$codigo_ibge <- as.character(cidade_latlng$codigo_ibge)
+data <- left_join(data, cidade_latlng, by = c("city_ibge_code" = "codigo_ibge"))
+last_data <- data %>% filter(is_last == T)
+
+# geometry data of cities
+shp_sf <- get_brmap("City", geo.filter = list(State = 42))
+shp_sf$City <- as.character(shp_sf$City)
+shp_sf <- st_as_sf(shp_sf)%>%
+ st_transform(4326)
+shp_sf <- shp_sf %>% filter(City %in% last_data$city_ibge_code)
+shp_sf_last_data <- left_join(shp_sf,last_data, by = c("City" = "city_ibge_code"))
+shp_sf <- left_join(shp_sf,data, by = c("City" = "city_ibge_code"))
+
+```
+
+Total de casos de Covid-19 confirmados nas cidades catarinenses:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#plot whole cases in SC's cities
+
+leaflet(last_data) %>% addTiles() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addCircleMarkers(
+    radius = ~sqrt(last_data$confirmed) * 5,
+    fillOpacity = 0.5, stroke = F, 
+    popup = paste0("<b>Cidade: </b>", last_data$city,"<br>",
+                   "<b>Casos Confirmados: </b>", last_data$confirmed)
+ )
+
+```
+
+Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catarinenses:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## create the colors quantiles
+binpal <- colorQuantile(heat.colors(10), shp_sf_last_data$confirmed_per_100k_inhabitants, n = 10, reverse = T)
+
+# plot heatmap of Covid-19 cases in SC
+leaflet(shp_sf_last_data) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(data = shp_sf_last_data,
+              smoothFactor = 0.5,
+              fillOpacity = 0.5,
+              weight = 0.5,
+              color = ~binpal(confirmed_per_100k_inhabitants),
+              opacity = 0.8,
+              highlightOptions = highlightOptions(color = "black",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              popup = ~paste(sep = " ",
+                             "<b>Cidade: </b>", shp_sf_last_data$city, "<br>",
+                             "<b>Casos confrmados: </b>", shp_sf_last_data$confirmed, "<br>",
+                             "<b>Casos por 100k habitantes: </b>", shp_sf_last_data$confirmed_per_100k_inhabitants)) %>% 
+        addLegend("bottomright",
+                  title = "Casos confirmados por<br>100k habitantes", 
+                  pal = binpal, 
+                  values = ~confirmed_per_100k_inhabitants, 
+                  opacity = 0.8,
+                  labFormat = function(type, cuts, p) {
+                    n = length(cuts)
+                    p = paste0(round(p * 100), '%')
+                    cuts = paste0(formatC(cuts[-n]), " - ", formatC(cuts[-1]))
+                    # mouse over the legend labels to see the percentile ranges
+                    paste0('<span title="', p[-n], " - ", p[-1], '">', cuts,'</span>')})
+
+```
+
+
+
+
+```{r}
+## attempt to make a graph / map move
+
+## map 
+map_reveal <- ggplot(
+  shp_sf,
+  aes(x = lng, y=lat, group = city,size = confirmed * 50, colour = 'purple',alpha = .25)
+  ) +
+  geom_point()+
+  scale_color_viridis_d() +
+  # geom_sf(data = sc_map) +
+  labs(x = "Dias desde o primeiro caso", y = "Casos Confirmados") +
+  theme(legend.position = "none") +
+  transition_manual(date)
+
+# lat/lng works, but whithout map in background
+map_reveal <-map_reveal + transition_reveal(date)
+map_reveal
+
+
+# line chart moving.. will be improved--
+line_reveal <- ggplot(
+  data,
+  aes(x = date, y=confirmed, group = city,colour = factor(city))
+  ) +
+  geom_line()+
+  scale_color_viridis_d() +
+  labs(x = "Dias desde o primeiro caso", y = "Casos Confirmados") +
+  theme(legend.position = "none")
+
+line_reveal <- line_reveal + transition_reveal(date)
+line_reveal
+
+
+
+
+
+
+
+```
+
+
+
 
 ## Códigos
 
