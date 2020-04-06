@@ -283,7 +283,7 @@ p_lin <- casos_por_estado %>%
 p_lin %>% ggplotly()
 
 if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
-
+# 
 ### Log scale
 x_seq <-data_frame(days_from_10th = seq(0,max(as.integer(casos_por_estado$days_from_10th),na.rm=T)+2,1)) %>% 
   mutate(
@@ -321,6 +321,7 @@ if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot"
 
 ```
 
+
 # No estado de Santa Catarina
 
 
@@ -335,16 +336,16 @@ read_CityDataCovid <- function() {
   url <- "https://brasil.io/api/dataset/covid19/caso/data?format=json"
   tf <- GET(url)
   
-  my_content <- httr::content(tf, as = 'text')
-  my_content_from_json <- jsonlite::fromJSON(my_content)
-  out<- my_content_from_json$results
+  content <- httr::content(tf, as = 'text')
+  content_from_json <- jsonlite::fromJSON(content)
+  out<- content_from_json$results
   # verify more pages of data and get all
-  while(!is.null(my_content_from_json$`next`)){
-    url <- my_content_from_json$`next`
+  while(!is.null(content_from_json$`next`)){
+    url <- content_from_json$`next`
     tf <- GET(url)
-    my_content <- httr::content(tf, as = 'text')
-    my_content_from_json <- jsonlite::fromJSON(my_content)
-    results_df_np<- my_content_from_json$results
+    content <- httr::content(tf, as = 'text')
+    content_from_json <- jsonlite::fromJSON(content)
+    results_df_np<- content_from_json$results
     out <- bind_rows(out, results_df_np)
   }
     return(out)
@@ -355,7 +356,7 @@ data <- data %>% filter(state == "SC"  & place_type == "city")
 data$date <- as.Date(data$date)
 
 # lat/lng data of cities
-cidade_latlng <- read.csv("municipios.csv")
+cidade_latlng <- read.csv("municipios_latlng.csv")
 cidade_latlng <- cidade_latlng %>% select(codigo_ibge = 1, lat = latitude, lng = longitude)
 cidade_latlng$codigo_ibge <- as.character(cidade_latlng$codigo_ibge)
 data <- left_join(data, cidade_latlng, by = c("city_ibge_code" = "codigo_ibge"))
@@ -372,6 +373,7 @@ shp_sf <- left_join(shp_sf,data, by = c("City" = "city_ibge_code"))
 
 ```
 
+
 Total de casos de Covid-19 confirmados nas cidades catarinenses:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #plot whole cases in SC's cities
@@ -379,13 +381,14 @@ Total de casos de Covid-19 confirmados nas cidades catarinenses:
 leaflet(last_data) %>% addTiles() %>%
   addProviderTiles(providers$CartoDB.Positron) %>% 
   addCircleMarkers(
-    radius = ~sqrt(last_data$confirmed) * 5,
+    radius = ~sqrt(last_data$confirmed) * 3,
     fillOpacity = 0.5, stroke = F, 
     popup = paste0("<b>Cidade: </b>", last_data$city,"<br>",
                    "<b>Casos Confirmados: </b>", last_data$confirmed)
  )
 
 ```
+
 
 Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catarinenses:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
@@ -424,45 +427,18 @@ leaflet(shp_sf_last_data) %>%
 
 
 
-
-```{r}
-## attempt to make a graph / map move
-
-## map 
-map_reveal <- ggplot(
-  shp_sf,
-  aes(x = lng, y=lat, group = city,size = confirmed * 50, colour = 'purple',alpha = .25)
-  ) +
-  geom_point()+
-  scale_color_viridis_d() +
-  # geom_sf(data = sc_map) +
-  labs(x = "Dias desde o primeiro caso", y = "Casos Confirmados") +
-  theme(legend.position = "none") +
-  transition_manual(date)
-
-# lat/lng works, but whithout map in background
-map_reveal <-map_reveal + transition_reveal(date)
-map_reveal
-
-
-# line chart moving.. will be improved--
-line_reveal <- ggplot(
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+confirmed_cases_city <- ggplot(
   data,
-  aes(x = date, y=confirmed, group = city,colour = factor(city))
+  aes(x = date, y=confirmed, group = city,colour = factor(city), text = paste0("Cidade: ", city,"<br>","Casos Confirmados Acumulados: ", confirmed, "<br>", "Data: ", date))
   ) +
   geom_line()+
   scale_color_viridis_d() +
-  labs(x = "Dias desde o primeiro caso", y = "Casos Confirmados") +
+  labs(title = paste("Número de casos de COVID-19 por cidade catarinense - ",format(Sys.time(), "%d/%m/%Y"))) + xlab("Data") + ylab("Casos confirmados")+ theme_minimal() +
   theme(legend.position = "none")
-
-line_reveal <- line_reveal + transition_reveal(date)
-line_reveal
-
-
-
-
-
-
+ggplotly(confirmed_cases_city, dynamicTicks = TRUE, tooltip = c("text")) %>%
+  rangeslider() %>%
+  layout(hovermode = "x")
 
 ```
 
