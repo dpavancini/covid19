@@ -159,7 +159,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 
 
   # Upload to chart studio
-# if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
+if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
 ```
 
 Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de tendências, notamos que a inclinação da curva brasileira é um pouco menor que de países onde a doença está em estágio crítico como Itália e Espanha.
@@ -188,7 +188,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 p %>% ggplotly()
 
   # Upload to chart studio
-# if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
+if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
 ```
 
 Um ponto importante é considerar a evolução da epidemia em termos relativos, isto é, qual o percentual de pessoas infectadas na população de uma região. Esse indicador é chamado de incidência, ou quando considerado em relação ao número de pessoas expostas, é chamado de ~taxa de ataque~. Como, em tese, não há pessoas com imunidade conhecida ao COVID-19 é possível dizer que ambas as taxas são aproximadamente iguais.
@@ -229,7 +229,7 @@ p<- dados_selecionados_estat %>%
 
 p %>% ggplotly()
 
-# if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
+if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
 ```
 
 
@@ -286,7 +286,7 @@ p_lin <- casos_por_estado %>%
 
 p_lin %>% ggplotly()
 
-# if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
+if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
 # 
 ### Log scale
 x_seq <-data_frame(days_from_10th = seq(0,max(as.integer(casos_por_estado$days_from_10th),na.rm=T)+2,1)) %>% 
@@ -309,7 +309,7 @@ p_log <- casos_por_estado %>%
 
 p_log %>% ggplotly()
 
-# if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
+if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
 
 
 ## Per 100.000
@@ -321,7 +321,7 @@ p_lin_1000 <- casos_por_estado %>%
 
 p_lin_1000 %>% ggplotly()
 
-# if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
+if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
 
 ```
 
