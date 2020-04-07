@@ -20,7 +20,11 @@ library(sf)
 library(leaflet)
 library(jsonlite)
 library(brazilmaps)
-library(gganimate)
+library(tweenr)
+library(gifski)
+library(extrafont)
+library(scales)
+library(cowplot)
 # library(ggflags)
 options(scipen=999)
 options(browser='false')
@@ -155,7 +159,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 
 
   # Upload to chart studio
-if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
+# if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
 ```
 
 Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de tendências, notamos que a inclinação da curva brasileira é um pouco menor que de países onde a doença está em estágio crítico como Itália e Espanha.
@@ -184,7 +188,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 p %>% ggplotly()
 
   # Upload to chart studio
-if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
+# if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
 ```
 
 Um ponto importante é considerar a evolução da epidemia em termos relativos, isto é, qual o percentual de pessoas infectadas na população de uma região. Esse indicador é chamado de incidência, ou quando considerado em relação ao número de pessoas expostas, é chamado de ~taxa de ataque~. Como, em tese, não há pessoas com imunidade conhecida ao COVID-19 é possível dizer que ambas as taxas são aproximadamente iguais.
@@ -225,7 +229,7 @@ p<- dados_selecionados_estat %>%
 
 p %>% ggplotly()
 
-if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
+# if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
 ```
 
 
@@ -282,14 +286,14 @@ p_lin <- casos_por_estado %>%
 
 p_lin %>% ggplotly()
 
-if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
+# if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
 # 
 ### Log scale
 x_seq <-data_frame(days_from_10th = seq(0,max(as.integer(casos_por_estado$days_from_10th),na.rm=T)+2,1)) %>% 
   mutate(
     y_log_1d = 10 * 2^(days_from_10th),
     y_log_2d = 10 * 2^(1/2 * days_from_10th), 
-    y_log_5d = 10 * 2^(1/5 * days_from_10th),                                                                                                   y_log_10d = 10 * 2^(1/10 * days_from_10th))      
+    y_log_5d = 10 * 2^(1/5 * days_from_10th),                                                                                                 y_log_10d = 10 * 2^(1/10 * days_from_10th))      
 
 x_seq %>% ggplot(aes(x=days_from_10th, y = y_log_1d)) +geom_line() + geom_line(aes(y=y_log_2d)) + scale_y_log10()
 
@@ -305,7 +309,7 @@ p_log <- casos_por_estado %>%
 
 p_log %>% ggplotly()
 
-if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
+# if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
 
 
 ## Per 100.000
@@ -317,7 +321,7 @@ p_lin_1000 <- casos_por_estado %>%
 
 p_lin_1000 %>% ggplotly()
 
-if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
+# if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
 
 ```
 
@@ -352,6 +356,8 @@ read_CityDataCovid <- function() {
 }
 # get data
 data <- read_CityDataCovid()
+data$date <- as.Date(data$date)
+data_SC_state <- data %>% filter(state == "SC"  & place_type == "state")%>% arrange(date) %>% mutate(day=1+(row_number()-1)*7,ease="linear") 
 data <- data %>% filter(state == "SC"  & place_type == "city")
 data$date <- as.Date(data$date)
 
@@ -373,12 +379,68 @@ shp_sf <- left_join(shp_sf,data, by = c("City" = "city_ibge_code"))
 
 ```
 
+\ 
+
+### Evolução dos casos em Santa Catarina
+
+\ 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,include = FALSE}
+# prepare for animation. methodology taken from http://lenkiefer.com/2018/08/11/state-employment-dataviz/
+plot_data_tween_sc <- tween_elements(data_SC_state,
+                 time = "day",  group="ease",
+                 ease="ease", nframes = nrow(data_SC_state))
+
+df_tween_appear_SC <- tween_appear(plot_data_tween_sc, time='day', nframes = nrow(data_SC_state)*3)
+N <- max(df_tween_appear_SC$.frame)
+
+# Function for plots -----
+make_plot_appear <- function(i, maxi=N){
+  g.plot <- ggplot(data=df_tween_appear_SC, aes(x=date,y=confirmed,label=confirmed,3))+
+    geom_line(alpha=0)+
+    geom_line(data= .%>% filter(.frame==i, .age> -3.5), color="#27408b",size=1.05) +
+    geom_text(data=  .%>% filter(.frame==i, .age> -3.5) %>% tail(1),  size=5, alpha=0.95,color="black",nudge_y=.0005)+
+    geom_point(data=  .%>% filter(.frame==i, .age> -3.5) %>% tail(1), size=3, alpha=.82,color="#27408b")+
+    geom_hline(data=  .%>% filter(.frame==i, .age> -3.5) %>% tail(1), aes(yintercept=confirmed),alpha=0.95, linetype=2,color="#27408b")+
+    theme_minimal()+
+    scale_y_continuous()+
+    scale_color_manual(name="",values=c(rgb(103,180,75, maxColorValue = 256),"#f37735","#27408b"))+
+    theme(text = element_text(color = "#27408b"))+
+    labs(y="Número de casos", x="Data",
+         title="Casos de COVID-19 confirmados em Santa Catarina",
+         subtitle=paste("Dados atualizados em: ",format(Sys.time(), "%d/%m/%Y")),
+         caption="Dados disponibilizados pelas Secretarias de Saúde Estaduais.\n(https://brasil.io/dataset/covid19/caso)")
+    plot_grid(g.plot,rel_heights=c(5,1),ncol=1)
+}
+
+# write giff ----
+gif_file <- save_gif({for (i in seq(1,N)){  
+  g<- make_plot_appear(i)
+  print(g)
+  print(paste(i,"out of",N))
+}
+  for (ii in 1:30){
+    print(g)
+    print(paste(ii,"out of",30))
+  }
+}, gif_file= paste0("./COVID19_SC.gif"),width = 1200, height = 1000, res = 144, delay=1/15)
+
+# utils::browseURL(gif_file)
+```
+
+<img src="COVID19_SC.gif">
+
+\ 
+
+### Total de casos por cidade catarinense
+
+\ 
 
 Total de casos de Covid-19 confirmados nas cidades catarinenses:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #plot whole cases in SC's cities
 
-leaflet(last_data) %>% addTiles() %>%
+leaflet(last_data, width = "100%") %>% addTiles() %>%
   addProviderTiles(providers$CartoDB.Positron) %>% 
   addCircleMarkers(
     radius = ~sqrt(last_data$confirmed) * 3,
@@ -389,6 +451,11 @@ leaflet(last_data) %>% addTiles() %>%
 
 ```
 
+\ 
+
+### Casos por 100k habitantes nas cidades catarinenses
+
+\ 
 
 Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catarinenses:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
@@ -396,7 +463,7 @@ Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catari
 binpal <- colorQuantile(heat.colors(10), shp_sf_last_data$confirmed_per_100k_inhabitants, n = 10, reverse = T)
 
 # plot heatmap of Covid-19 cases in SC
-leaflet(shp_sf_last_data) %>%
+leaflet(shp_sf_last_data, width = "100%") %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(data = shp_sf_last_data,
               smoothFactor = 0.5,
@@ -425,16 +492,26 @@ leaflet(shp_sf_last_data) %>%
 
 ```
 
+\ 
 
+### Casos por microrregião do estado
+
+\ 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
+shp_mr <- get_brmap("MicroRegion", geo.filter = list(State = 42)) %>% sf::st_set_geometry(NULL)
+shp_mr <- left_join(shp_mr,shp_sf %>% select(-nome), by = "MicroRegion")
+shp_mr <- shp_mr %>% group_by(date, MicroRegion, nome) %>% 
+  summarise(confirmed_mr = sum(confirmed))
+
+
 confirmed_cases_city <- ggplot(
-  data,
-  aes(x = date, y=confirmed, group = city,colour = factor(city), text = paste0("Cidade: ", city,"<br>","Casos Confirmados Acumulados: ", confirmed, "<br>", "Data: ", date))
+  shp_mr,
+  aes(x = date, y=confirmed_mr, group = nome,colour = factor(nome), text = paste0("Microrregião: ", nome,"<br>","Casos Confirmados Acumulados: ", confirmed_mr, "<br>", "Data: ", date))
   ) +
   geom_line()+
   scale_color_viridis_d() +
-  labs(title = paste("Número de casos de COVID-19 por cidade catarinense - ",format(Sys.time(), "%d/%m/%Y"))) + xlab("Data") + ylab("Casos confirmados")+ theme_minimal() +
+  labs(title = paste("Número de casos de COVID-19 por microrregião catarinense - ",format(Sys.time(), "%d/%m/%Y"))) + xlab("Data") + ylab("Casos confirmados")+ theme_minimal() +
   theme(legend.position = "none")
 ggplotly(confirmed_cases_city, dynamicTicks = TRUE, tooltip = c("text")) %>%
   rangeslider() %>%
