@@ -25,7 +25,7 @@ library(gifski)
 library(extrafont)
 library(scales)
 library(cowplot)
-# library(ggflags)
+library(htmltools)
 options(scipen=999)
 options(browser='false')
 
@@ -159,7 +159,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 
 
   # Upload to chart studio
-if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
+# if (prod == TRUE) {api_create(p, filename = "covid-world-1st-plot")}
 ```
 
 Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de tendências, notamos que a inclinação da curva brasileira é um pouco menor que de países onde a doença está em estágio crítico como Itália e Espanha.
@@ -188,7 +188,7 @@ theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 p %>% ggplotly()
 
   # Upload to chart studio
-if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
+# if (prod == TRUE) {api_create(p, filename = "covid-world-100th-plot")}
 ```
 
 Um ponto importante é considerar a evolução da epidemia em termos relativos, isto é, qual o percentual de pessoas infectadas na população de uma região. Esse indicador é chamado de incidência, ou quando considerado em relação ao número de pessoas expostas, é chamado de ~taxa de ataque~. Como, em tese, não há pessoas com imunidade conhecida ao COVID-19 é possível dizer que ambas as taxas são aproximadamente iguais.
@@ -229,7 +229,7 @@ p<- dados_selecionados_estat %>%
 
 p %>% ggplotly()
 
-if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
+# if (prod == TRUE) {api_create(p, filename = "covid-world-attack-plot")}
 ```
 
 
@@ -286,16 +286,17 @@ p_lin <- casos_por_estado %>%
 
 p_lin %>% ggplotly()
 
-if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
+# if (prod == TRUE) {api_create(p_lin, filename = "covid-states-lin-plot")}
 # 
 ### Log scale
 x_seq <-data_frame(days_from_10th = seq(0,max(as.integer(casos_por_estado$days_from_10th),na.rm=T)+2,1)) %>% 
   mutate(
     y_log_1d = 10 * 2^(days_from_10th),
     y_log_2d = 10 * 2^(1/2 * days_from_10th), 
-    y_log_5d = 10 * 2^(1/5 * days_from_10th),                                                                                                 y_log_10d = 10 * 2^(1/10 * days_from_10th))      
+    y_log_5d = 10 * 2^(1/5 * days_from_10th),                                                                                                 
+    y_log_10d = 10 * 2^(1/10 * days_from_10th))      
 
-x_seq %>% ggplot(aes(x=days_from_10th, y = y_log_1d)) +geom_line() + geom_line(aes(y=y_log_2d)) + scale_y_log10()
+# x_seq %>% ggplot(aes(x=days_from_10th, y = y_log_1d)) +geom_line() + geom_line(aes(y=y_log_2d)) + scale_y_log10()
 
   
   
@@ -309,7 +310,7 @@ p_log <- casos_por_estado %>%
 
 p_log %>% ggplotly()
 
-if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
+# if (prod == TRUE) {api_create(p_log, filename = "covid-states-log-plot")}
 
 
 ## Per 100.000
@@ -321,7 +322,7 @@ p_lin_1000 <- casos_por_estado %>%
 
 p_lin_1000 %>% ggplotly()
 
-if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
+# if (prod == TRUE) {api_create(p_lin_1000, filename = "covid-states-pop-lin-plot")}
 
 ```
 
@@ -357,15 +358,33 @@ read_CityDataCovid <- function() {
 # get data
 data <- read_CityDataCovid()
 data$date <- as.Date(data$date)
+data$new_cases <- rep(NA, nrow(data))
 data_SC_state <- data %>% filter(state == "SC"  & place_type == "state")%>% arrange(date) %>% mutate(day=1+(row_number()-1)*7,ease="linear") 
-data <- data %>% filter(state == "SC"  & place_type == "city")
-data$date <- as.Date(data$date)
+data <- data %>% filter(state == "SC"  & place_type == "city", !is.na(city_ibge_code))
+# get the new cases per city in each day 
+city_ibge_code <- unique(data$city_ibge_code)
+new_cases <- data.frame()
+for (i in 1:length(city_ibge_code)) {
+  city_data <- data %>% filter(city_ibge_code == city_ibge_code[i]) %>% arrange(date)
+  date <- city_data %>% select(date) %>% distinct()
+  city_data$new_cases[1] <- city_data$confirmed[1]
+  if(nrow(city_data) > 1){
+    for (k in 2:nrow(city_data)) {
+      city_data$new_cases[k] <- city_data$confirmed[k] - city_data$confirmed[k-1]
+      }
+  }
+  new_cases <- bind_rows(new_cases, city_data)
+}
+data <- new_cases
+rm(city_ibge_code, new_cases, date)
+
 
 # lat/lng data of cities
 cidade_latlng <- read.csv("municipios_latlng.csv")
 cidade_latlng <- cidade_latlng %>% select(codigo_ibge = 1, lat = latitude, lng = longitude)
 cidade_latlng$codigo_ibge <- as.character(cidade_latlng$codigo_ibge)
 data <- left_join(data, cidade_latlng, by = c("city_ibge_code" = "codigo_ibge"))
+data_SC_state <- left_join(data_SC_state, cidade_latlng, by = c("city_ibge_code" = "codigo_ibge"))
 last_data <- data %>% filter(is_last == T)
 
 # geometry data of cities
@@ -425,7 +444,6 @@ gif_file <- save_gif({for (i in seq(1,N)){
   }
 }, gif_file= paste0("./COVID19_SC.gif"),width = 1200, height = 1000, res = 144, delay=1/15)
 
-# utils::browseURL(gif_file)
 ```
 
 <img src="COVID19_SC.gif">
@@ -446,7 +464,8 @@ leaflet(last_data, width = "100%") %>% addTiles() %>%
     radius = ~sqrt(last_data$confirmed) * 3,
     fillOpacity = 0.5, stroke = F, 
     popup = paste0("<b>Cidade: </b>", last_data$city,"<br>",
-                   "<b>Casos Confirmados: </b>", last_data$confirmed)
+                   "<b>Casos Confirmados: </b>", last_data$confirmed),
+    label = ~city
  )
 
 ```
@@ -460,7 +479,7 @@ leaflet(last_data, width = "100%") %>% addTiles() %>%
 Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catarinenses:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 ## create the colors quantiles
-binpal <- colorQuantile(heat.colors(10), shp_sf_last_data$confirmed_per_100k_inhabitants, n = 10, reverse = T)
+pal <- colorNumeric(palette = "Reds", domain = shp_sf_last_data$confirmed_per_100k_inhabitants)
 
 # plot heatmap of Covid-19 cases in SC
 leaflet(shp_sf_last_data, width = "100%") %>%
@@ -469,59 +488,140 @@ leaflet(shp_sf_last_data, width = "100%") %>%
               smoothFactor = 0.5,
               fillOpacity = 0.5,
               weight = 0.5,
-              color = ~binpal(confirmed_per_100k_inhabitants),
+              color = ~pal(confirmed_per_100k_inhabitants),
               opacity = 0.8,
               highlightOptions = highlightOptions(color = "black",
                                                   weight = 2,
                                                   bringToFront = TRUE),
-              popup = ~paste(sep = " ",
-                             "<b>Cidade: </b>", shp_sf_last_data$city, "<br>",
-                             "<b>Casos confrmados: </b>", shp_sf_last_data$confirmed, "<br>",
-                             "<b>Casos por 100k habitantes: </b>", shp_sf_last_data$confirmed_per_100k_inhabitants)) %>% 
+              popup = ~paste0(sep = " ",
+                             "<b>Cidade: </b>", city, "<br>",
+                             "<b>Casos confrmados: </b>", confirmed, "<br>",
+                             "<b>Casos por 100k habitantes: </b>", confirmed_per_100k_inhabitants),
+              label = ~city) %>% 
         addLegend("bottomright",
                   title = "Casos confirmados por<br>100k habitantes", 
-                  pal = binpal, 
+                  pal = pal, 
                   values = ~confirmed_per_100k_inhabitants, 
-                  opacity = 0.8,
-                  labFormat = function(type, cuts, p) {
-                    n = length(cuts)
-                    p = paste0(round(p * 100), '%')
-                    cuts = paste0(formatC(cuts[-n]), " - ", formatC(cuts[-1]))
-                    # mouse over the legend labels to see the percentile ranges
-                    paste0('<span title="', p[-n], " - ", p[-1], '">', cuts,'</span>')})
+                  opacity = 0.8)
+
+
+# ggplot(shp_sf_last_data, aes(confirmed))+ geom_histogram()
 
 ```
 
 \ 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,out.width='100%', fig.show='hold', fig.align='center'}
+## cases SC's cities
+
+casos_por_cidade_d0 <- data  %>% 
+  filter(confirmed > 0 ) %>% 
+  arrange(date,city) %>%
+  group_by(city) %>% 
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((new_cases- lag(new_cases))/lag(new_cases))*100,
+         g_total_cases = ((confirmed- lag(confirmed))/lag(confirmed))*100
+        ) %>% 
+  select(date,city,days_from_first,g_new_cases,g_total_cases)
+
+casos_por_cidade_d10 <- data  %>% 
+  filter(confirmed > 10 ) %>% 
+  arrange(date,city) %>%
+  group_by(city) %>% 
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,city,days_from_10th)
+
+data <- data %>% 
+  left_join(casos_por_cidade_d0, by = c("date"= "date", "city" = "city")) %>% 
+  left_join(casos_por_cidade_d10, by = c("date"= "date", "city" = "city")) 
+
+
+p_lin <- data %>% 
+  filter(confirmed > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed, color=city,label=state)) + geom_line(size=1)+ 
+  labs(title = paste("Evolução por cidade (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+
+p_lin %>% ggplotly()
+
+x_seq <-tibble(days_from_10th = seq(0,max(as.integer(data$days_from_10th),na.rm=T)+2,1)) %>% 
+  mutate(
+    y_log_1d = 10 * 2^(days_from_10th),
+    y_log_2d = 10 * 2^(1/2 * days_from_10th), 
+    y_log_5d = 10 * 2^(1/5 * days_from_10th), 
+    y_log_10d = 10 * 2^(1/10 * days_from_10th))
+
+p_log <- data %>% 
+  filter(confirmed > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(aes(color=city,label=city),size=1) +
+   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = "grey") +
+  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por cidade de SC (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas cidades com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+theme_minimal() + annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)
+
+p_log %>% ggplotly()
+```
+
 
 ### Casos por microrregião do estado
 
 \ 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,out.width='100%', fig.show='hold', fig.align='center'}
+## cases SC's cities
 shp_mr <- get_brmap("MicroRegion", geo.filter = list(State = 42)) %>% sf::st_set_geometry(NULL)
 shp_mr <- left_join(shp_mr,shp_sf %>% select(-nome), by = "MicroRegion")
 shp_mr <- shp_mr %>% group_by(date, MicroRegion, nome) %>% 
-  summarise(confirmed_mr = sum(confirmed))
+  summarise(confirmed_mr = sum(confirmed), new_cases_mr = sum(new_cases))
+
+casos_por_cidade_d0 <- shp_mr  %>% 
+  filter(confirmed_mr > 0 ) %>% 
+  arrange(date,nome) %>%
+  group_by(nome) %>% 
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((new_cases_mr- lag(new_cases_mr))/lag(new_cases_mr))*100,
+         g_total_cases = ((confirmed_mr- lag(confirmed_mr))/lag(confirmed_mr))*100
+        ) %>% 
+  select(date,nome,days_from_first,g_new_cases,g_total_cases)
+
+casos_por_cidade_d10 <- shp_mr  %>% 
+  filter(confirmed_mr > 10 ) %>% 
+  arrange(date,nome) %>%
+  group_by(nome) %>% 
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,nome,days_from_10th)
+
+shp_mr <- shp_mr %>% 
+  left_join(casos_por_cidade_d0, by = c("date"= "date", "nome" = "nome")) %>% 
+  left_join(casos_por_cidade_d10, by = c("date"= "date", "nome" = "nome")) 
 
 
-confirmed_cases_city <- ggplot(
-  shp_mr,
-  aes(x = date, y=confirmed_mr, group = nome,colour = factor(nome), text = paste0("Microrregião: ", nome,"<br>","Casos Confirmados Acumulados: ", confirmed_mr, "<br>", "Data: ", date))
-  ) +
-  geom_line()+
-  scale_color_viridis_d() +
-  labs(title = paste("Número de casos de COVID-19 por microrregião catarinense - ",format(Sys.time(), "%d/%m/%Y"))) + xlab("Data") + ylab("Casos confirmados")+ theme_minimal() +
-  theme(legend.position = "none")
-ggplotly(confirmed_cases_city, dynamicTicks = TRUE, tooltip = c("text")) %>%
-  rangeslider() %>%
-  layout(hovermode = "x")
+p_lin <- shp_mr %>% 
+  filter(confirmed_mr > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed_mr, color=nome)) + geom_line(size=1)+ 
+  labs(title = paste("Evolução por microrregião (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas microrregiões com mais de 10 casos.Os dados são atualizados diariamente.\n Fontehttps://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
 
+p_lin %>% ggplotly()
+
+x_seq <-tibble(days_from_10th = seq(0,max(as.integer(shp_mr$days_from_10th),na.rm=T)+2,1)) %>% 
+  mutate(
+    y_log_1d = 10 * 2^(days_from_10th),
+    y_log_2d = 10 * 2^(1/2 * days_from_10th), 
+    y_log_5d = 10 * 2^(1/5 * days_from_10th), 
+    y_log_10d = 10 * 2^(1/10 * days_from_10th))
+
+p_log <- shp_mr %>% 
+  filter(confirmed_mr > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed_mr)) + geom_line(aes(color=nome,label=nome),size=1) +
+   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = "grey") +
+  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por microrregião de SC (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas microrregiões com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal() + annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)
+
+p_log %>% ggplotly()
 ```
-
-
-
-
 ## Códigos
 
 Os códigos utilizados e análises estão disponíveis em https://github.com/dpavancini/covid19.
