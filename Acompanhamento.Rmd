@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE,message=FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE,message=FALSE,cache=FALSE)
 
 #these libraries are necessary
 library(readxl)
@@ -28,6 +28,10 @@ Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
 # If prod = T, publish plots online
 prod = T
 
+
+# Plot Margins
+
+m <- list(l=100, r=100, t=100, b=100)
 ```
 
 ## Acompanhamento COVID-19
@@ -119,7 +123,7 @@ dados_completos <- data %>%
   left_join(dados_preparados_d0, by= c("geoId" = "geoId", "dateRep" = "dateRep")) %>% 
   left_join(dados_preparados_d100, by= c("geoId" = "geoId", "dateRep" = "dateRep"))
 ```
-
+    
 Esta página busca servir como um compilado de gráficos informativos sobre a evolução da epidemia de coronavírus (COVID-19) no mundo, no Brasil em regiões brasileiras. Ela será atualizada conforme novos dados fiquem disponíveis.
 
 Considerando a evolução dos casos confirmados em números absolutos a partir do Dia 0, o Brasil segue uma evolução semelhante ao observado na China em Janeiro, porém com uma distribuição maior entre regiões em comparação com o caso Chinês onde a região de Hubei foi duramente atingida.
@@ -152,13 +156,41 @@ p <- dados_selecionados %>%
   scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7)) +
 theme(legend.position="bottom",plot.title = element_text(hjust = 0.5)) 
 
-p_1 <- p %>% ggplotly() %>% layout(title=paste("Evolução após 1º caso"), 
-                            annotations = list(x = 0.8, y = -0.05, text = paste0("Fonte:ECDC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))), 
-                                          showarrow = F, xref='paper', yref='paper', 
-                                          xanchor='left', yanchor='auto', xshift=0, yshift=0,
-                                          font=list(size=12, color="grey")))
+p_1 <- p %>% ggplotly() %>% layout(title=list(text=paste("<b>Evolução após 1º caso</b>"),
+                                   font=list(family="Raleway", color="#000000",size=16),
+                                   xref='paper',
+                                   yref='paper',
+                                   x=0,
+                                   y=1.1,
+                                   xanchor='left', 
+                                   yanchor='top'),
+                                   margin=m,
+                                   autosize = F,
+                                   annotations = list(list(x = 0, 
+                                                      y = 1.1,
+                                                      text = "Em escala logarítimica",
+                                                      showarrow = F,
+                                                      xref='paper',
+                                                      yref='paper', 
+                                                      xanchor='left', 
+                                                      yanchor='top', 
+                                                      xshift=0, 
+                                                      yshift=-0.8,
+                                                      font=list(size=14, color="#000000", family="Raleway")),
+                                   list(x = 0.8, 
+                                        y = -0.05,
+                                        text = paste0("Fonte:ECDC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))), 
+                                        showarrow = F,
+                                        xref='paper',
+                                        yref='paper', 
+                                        xanchor='left', 
+                                        yanchor='auto', 
+                                        xshift=0, 
+                                        yshift=0,
+                                        font=list(size=12, color="grey", family="Raleway"))))
+p_1
   # Upload to chart studio
-if (prod == TRUE) {api_create(p_1, filename = "covid-world-1st-plot",overwrite=T)}
+if (prod == TRUE) {api_create(p_1, filename = "covid-world-1st-plot", fileopt = "overwrite")}
 ```
 
 Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de tendências, notamos que a inclinação da curva brasileira é um pouco menor que de países onde a doença está em estágio crítico como Itália e Espanha.
@@ -172,16 +204,19 @@ p <- dados_selecionados %>%
   scale_y_log10()  + theme_minimal() + xlab("Dias desde 100º caso") + ylab("Casos confirmados") +
   scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
   scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7))+
-theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
+  theme(legend.position="bottom",plot.title = element_text(hjust = 0.5))
 
 p_2 <- p %>% ggplotly() %>% layout(title=paste("Evolução após 100º caso,"), 
-                            annotations = list(x = 0.8, y = -0.05, text = paste0("Fonte:ECDC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))), 
-                                          showarrow = F, xref='paper', yref='paper', 
-                                          xanchor='left', yanchor='auto', xshift=0, yshift=0,
-                                          font=list(size=12, color="grey")))
-
-  # Upload to chart studio
-if (prod == TRUE) {api_create(p_2, filename = "covid-world-100th-plot")}
+                                   margin=m,
+                                   annotations = list(x = 0.8, y = -0.05,
+                                                      text = paste0("Fonte:ECDC.",
+                                                                    paste("Atualizado:",format(Sys.time(),"%d/%m/%Y"))), 
+                                                      showarrow = F, xref='paper', yref='paper', 
+                                                      xanchor='left', yanchor='auto', xshift=0, yshift=0,
+                                                      font=list(size=12, color="grey")))
+p_2
+# Upload to chart studio
+if (prod == TRUE) {api_create(p_2, filename = "covid-world-100th-plot",fileopt = "overwrite")}
 ```
 
 Um ponto importante é considerar a evolução da epidemia em termos relativos, isto é, qual o percentual de pessoas infectadas na população de uma região. Esse indicador é chamado de incidência, ou quando considerado em relação ao número de pessoas expostas, é chamado de ~taxa de ataque~. Como, em tese, não há pessoas com imunidade conhecida ao COVID-19 é possível dizer que ambas as taxas são aproximadamente iguais.
@@ -232,8 +267,8 @@ p_3 <- p %>% ggplotly() %>% layout(title=paste("Casos por 1000 habitantes"),
                                           showarrow = F, xref='paper', yref='paper', 
                                           xanchor='left', yanchor='auto', xshift=0, yshift=0,
                                           font=list(size=12, color="grey")))
-
-if (prod == TRUE) {api_create(p_3, filename = "covid-world-attack-plot")}
+p_3
+if (prod == TRUE) {api_create(p_3, filename = "covid-world-attack-plot",fileopt = "overwrite")}
 ```
 
 
@@ -241,7 +276,7 @@ if (prod == TRUE) {api_create(p_3, filename = "covid-world-attack-plot")}
 
 Quando observamos o cenário por região brasileira, notamos que embora SP apresente a maior quantidade de Casos Confirmados, outros estados estão em curvas semelhantes porém com algum atraso. Isso é esperado pois em teoria não há motivo para que a doença se espalhe mais ou menos entre diferentes populações. A velocidade do espalhamento da epidemia pode depender de concentração populacional, comportamentos regionais e, sobretudo, das medidas de distanciamento sociais adotadas em cada região. Ao longo das próximas semanas poderemos ter uma ideia de como essas medidas estão surtindo efeito em cada estado brasileiro. Os dados por estados foram compilados por [Wesley Cota](https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv) e são mostrados para estados com mais de 10 casos confirmados.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, cache=F}
 # Credido ao Wison Cota por fazer essa agregação
 casos_por_estado <- readr::read_csv("https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv")
 pop_por_cidade <-  readr::read_csv("cidades.csv")
@@ -294,7 +329,7 @@ p_4 <- p_lin %>% ggplotly() %>% layout(title=paste("Evolução por estado (linea
                                           showarrow = F, xref='paper', yref='paper', 
                                           xanchor='left', yanchor='auto', xshift=0, yshift=0,
                                           font=list(size=12, color="grey")))
-
+p_4
 if (prod == TRUE) {api_create(p_4, filename = "covid-states-lin-plot")}
 
 ### Log scale
@@ -318,8 +353,8 @@ p_5 <- p_log %>% ggplotly() %>% layout(title=paste("Evolução por estado (em lo
                                           showarrow = F, xref='paper', yref='paper', 
                                           xanchor='left', yanchor='auto', xshift=0, yshift=0,
                                           font=list(size=12, color="grey")))
-
-if (prod == TRUE) {api_create(p_5, filename = "covid-states-log-plot")}
+p_5
+if (prod == TRUE) {api_create(p_5, filename = "covid-states-log-plot",fileopt = "overwrite")}
 
 
 ## Per 100.000
@@ -335,8 +370,8 @@ p_6 <- p_lin_1000 %>% ggplotly() %>% layout(title=paste("Casos por 100mil/hab (l
                                           showarrow = F, xref='paper', yref='paper', 
                                           xanchor='left', yanchor='auto', xshift=0, yshift=0,
                                           font=list(size=12, color="grey")))
-
-if (prod == TRUE) {api_create(p_6, filename = "covid-states-pop-lin-plot")}
+p_6
+if (prod == TRUE) {api_create(p_6, filename = "covid-states-pop-lin-plot",fileopt = "overwrite")}
 
 ```
 
@@ -371,8 +406,8 @@ p_7 <- p_log_sc %>% ggplotly() %>% layout(title=paste("Casos de SC"),
                                           showarrow = F, xref='paper', yref='paper', 
                                           xanchor='right', yanchor='top', xshift=0, yshift=0,
                                           font=list(size=12, color="grey")))
-
-if (prod == TRUE) {api_create(p_7, filename = "covid-sc-log-plot")}
+p_7
+if (prod == TRUE) {api_create(p_7, filename = "covid-sc-log-plot",fileopt = "overwrite")}
 ```
 
 
