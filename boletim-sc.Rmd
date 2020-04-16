@@ -1,0 +1,347 @@
+---
+title: "Boletim SC"
+author: "Daniel Avancini"
+date: "March 24, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#these libraries are necessary
+library(readxl)
+library(httr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggrepel)
+library(plotly)
+library(sf)
+library(leaflet)
+library(jsonlite)
+library(brazilmaps)
+library(tweenr)
+library(gifski)
+library(extrafont)
+library(scales)
+library(cowplot)
+library(htmltools)
+options(scipen=999)
+options(browser='false')
+
+# Load Chart Studio API
+Sys.setenv("plotly_username"=Sys.getenv("PLOTLY_USERNAME"))
+Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
+
+# If prod = T, publish plots online
+prod = T
+
+```
+
+## Acompanhamento COVID-19 - Santa Catarina
+
+Olhando para o estado de Santa Catarina, com dados disponibilizados pelas [Secretarias de Saúde Estaduais](https://brasil.io/dataset/covid19/caso), podemos avaliar a evolução dos casos no estado.
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,include = FALSE}
+## api for update data of Covid19 cases
+read_CityDataCovid <- function() {
+  # read api url for update  
+  url <- "https://brasil.io/api/dataset/covid19/caso/data?format=json"
+  tf <- GET(url)
+  
+  content <- httr::content(tf, as = 'text')
+  content_from_json <- jsonlite::fromJSON(content)
+  out<- content_from_json$results
+  # verify more pages of data and get all
+  while(!is.null(content_from_json$`next`)){
+    url <- content_from_json$`next`
+    tf <- GET(url)
+    content <- httr::content(tf, as = 'text')
+    content_from_json <- jsonlite::fromJSON(content)
+    results_df_np<- content_from_json$results
+    out <- bind_rows(out, results_df_np)
+  }
+    return(out)
+}
+# get data
+data <- read_CityDataCovid()
+data$date <- as.Date(data$date)
+data$new_cases <- rep(NA, nrow(data))
+data_SC_state <- data %>% filter(state == "SC"  & place_type == "state")%>% arrange(date) %>% mutate(day=1+(row_number()-1)*7,ease="linear") 
+data <- data %>% filter(state == "SC"  & place_type == "city", !is.na(city_ibge_code))
+# get the new cases per city in each day 
+city_ibge_code <- unique(data$city_ibge_code)
+new_cases <- data.frame()
+for (i in 1:length(city_ibge_code)) {
+  city_data <- data %>% filter(city_ibge_code == city_ibge_code[i]) %>% arrange(date)
+  date <- city_data %>% select(date) %>% distinct()
+  city_data$new_cases[1] <- city_data$confirmed[1]
+  if(nrow(city_data) > 1){
+    for (k in 2:nrow(city_data)) {
+      city_data$new_cases[k] <- city_data$confirmed[k] - city_data$confirmed[k-1]
+      }
+  }
+  new_cases <- bind_rows(new_cases, city_data)
+}
+data <- new_cases
+rm(city_ibge_code, new_cases, date)
+
+
+# lat/lng data of cities
+cidade_latlng <- read.csv("municipios_latlng.csv")
+cidade_latlng <- cidade_latlng %>% select(codigo_ibge = 1, lat = latitude, lng = longitude)
+cidade_latlng$codigo_ibge <- as.character(cidade_latlng$codigo_ibge)
+data <- left_join(data, cidade_latlng, by = c("city_ibge_code" = "codigo_ibge"))
+data_SC_state <- left_join(data_SC_state, cidade_latlng, by = c("city_ibge_code" = "codigo_ibge"))
+last_data <- data %>% filter(is_last == T)
+
+# geometry data of cities
+shp_sf <- get_brmap("City", geo.filter = list(State = 42))
+shp_sf$City <- as.character(shp_sf$City)
+shp_sf <- st_as_sf(shp_sf)%>%
+ st_transform(4326)
+shp_sf <- shp_sf %>% filter(City %in% last_data$city_ibge_code)
+shp_sf_last_data <- left_join(shp_sf,last_data, by = c("City" = "city_ibge_code"))
+shp_sf <- left_join(shp_sf,data, by = c("City" = "city_ibge_code"))
+
+```
+
+\ 
+
+### Evolução dos casos em Santa Catarina
+
+\ 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,include = FALSE}
+# prepare for animation. methodology taken from http://lenkiefer.com/2018/08/11/state-employment-dataviz/
+plot_data_tween_sc <- tween_elements(data_SC_state,
+                 time = "day",  group="ease",
+                 ease="ease", nframes = nrow(data_SC_state))
+
+df_tween_appear_SC <- tween_appear(plot_data_tween_sc, time='day', nframes = nrow(data_SC_state)*3)
+N <- max(df_tween_appear_SC$.frame)
+
+# Function for plots -----
+make_plot_appear <- function(i, maxi=N){
+  g.plot <- ggplot(data=df_tween_appear_SC, aes(x=date,y=confirmed,label=confirmed,3))+
+    geom_line(alpha=0)+
+    geom_line(data= .%>% filter(.frame==i, .age> -3.5), color="#27408b",size=1.05) +
+    geom_text(data=  .%>% filter(.frame==i, .age> -3.5) %>% tail(1),  size=5, alpha=0.95,color="black",nudge_y=.0005)+
+    geom_point(data=  .%>% filter(.frame==i, .age> -3.5) %>% tail(1), size=3, alpha=.82,color="#27408b")+
+    geom_hline(data=  .%>% filter(.frame==i, .age> -3.5) %>% tail(1), aes(yintercept=confirmed),alpha=0.95, linetype=2,color="#27408b")+
+    theme_minimal()+
+    scale_y_continuous()+
+    scale_color_manual(name="",values=c(rgb(103,180,75, maxColorValue = 256),"#f37735","#27408b"))+
+    theme(text = element_text(color = "#27408b"))+
+    labs(y="Número de casos", x="Data",
+         title="Casos de COVID-19 confirmados em Santa Catarina",
+         subtitle=paste("Dados atualizados em: ",format(Sys.time(), "%d/%m/%Y")),
+         caption="Dados disponibilizados pelas Secretarias de Saúde Estaduais.\n(https://brasil.io/dataset/covid19/caso)")
+  
+    plot_grid(g.plot,rel_heights=c(5,1),ncol=1)
+}
+
+# write giff ----
+gif_file <- save_gif({for (i in seq(1,N)){  
+  g<- make_plot_appear(i)
+  print(g)
+  print(paste(i,"out of",N))
+}
+  for (ii in 1:30){
+    print(g)
+    print(paste(ii,"out of",30))
+  }
+}, gif_file= paste0("./COVID19_SC.gif"),width = 1200, height = 1000, res = 144, delay=1/15)
+
+```
+
+<img src="COVID19_SC.gif">
+
+\ 
+
+### Total de casos por cidade catarinense
+
+\ 
+
+Total de casos de Covid-19 confirmados nas cidades catarinenses:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#plot whole cases in SC's cities
+
+map_total_cases <- leaflet(last_data, width = "100%") %>% addTiles() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addCircleMarkers(
+    radius = ~sqrt(last_data$confirmed) * 3,
+    fillOpacity = 0.5, stroke = F, 
+    popup = paste0("<b>Cidade: </b>", last_data$city,"<br>",
+                   "<b>Casos Confirmados: </b>", last_data$confirmed),
+    label = ~city
+  )
+
+map_total_cases 
+#Export map
+htmlwidgets::saveWidget(map_total_cases,"map_total_cases.html")
+```
+
+\ 
+
+### Casos por 100k habitantes nas cidades catarinenses
+
+\ 
+
+Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catarinenses:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## create the colors quantiles
+pal <- colorNumeric(palette = "Reds", domain = shp_sf_last_data$confirmed_per_100k_inhabitants)
+
+# plot heatmap of Covid-19 cases in SC
+leaflet(shp_sf_last_data, width = "100%") %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(data = shp_sf_last_data,
+              smoothFactor = 0.5,
+              fillOpacity = 0.5,
+              weight = 0.5,
+              color = ~pal(confirmed_per_100k_inhabitants),
+              opacity = 0.8,
+              highlightOptions = highlightOptions(color = "black",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              popup = ~paste0(sep = " ",
+                             "<b>Cidade: </b>", city, "<br>",
+                             "<b>Casos confrmados: </b>", confirmed, "<br>",
+                             "<b>Casos por 100k habitantes: </b>", confirmed_per_100k_inhabitants),
+              label = ~city) %>% 
+        addLegend("bottomright",
+                  title = "Casos confirmados por<br>100k habitantes", 
+                  pal = pal, 
+                  values = ~confirmed_per_100k_inhabitants, 
+                  opacity = 0.8)
+
+
+# ggplot(shp_sf_last_data, aes(confirmed))+ geom_histogram()
+
+```
+
+\ 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,out.width='100%', fig.show='hold', fig.align='center'}
+## cases SC's cities
+
+casos_por_cidade_d0 <- data  %>% 
+  filter(confirmed > 0 ) %>% 
+  arrange(date,city) %>%
+  group_by(city) %>% 
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((new_cases- lag(new_cases))/lag(new_cases))*100,
+         g_total_cases = ((confirmed- lag(confirmed))/lag(confirmed))*100
+        ) %>% 
+  select(date,city,days_from_first,g_new_cases,g_total_cases)
+
+casos_por_cidade_d10 <- data  %>% 
+  filter(confirmed > 10 ) %>% 
+  arrange(date,city) %>%
+  group_by(city) %>% 
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,city,days_from_10th)
+
+data <- data %>% 
+  left_join(casos_por_cidade_d0, by = c("date"= "date", "city" = "city")) %>% 
+  left_join(casos_por_cidade_d10, by = c("date"= "date", "city" = "city")) 
+
+
+p_lin <- data %>% 
+  filter(confirmed > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed, color=city,label=state)) + geom_line(size=1)+ 
+  labs(title = paste("Evolução por cidade (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+
+p_lin %>% ggplotly()
+
+x_seq <-tibble(days_from_10th = seq(0,max(as.integer(data$days_from_10th),na.rm=T)+2,1)) %>% 
+  mutate(
+    y_log_1d = 10 * 2^(days_from_10th),
+    y_log_2d = 10 * 2^(1/2 * days_from_10th), 
+    y_log_5d = 10 * 2^(1/5 * days_from_10th), 
+    y_log_10d = 10 * 2^(1/10 * days_from_10th))
+
+p_log <- data %>% 
+  filter(confirmed > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(aes(color=city,label=city),size=1) +
+   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = "grey") +
+  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por cidade de SC (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas cidades com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+theme_minimal() + annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)
+
+p_log %>% ggplotly()
+```
+
+
+### Casos por microrregião do estado
+
+\ 
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,out.width='100%', fig.show='hold', fig.align='center'}
+## cases SC's cities
+shp_mr <- get_brmap("MicroRegion", geo.filter = list(State = 42)) %>% sf::st_set_geometry(NULL)
+shp_mr <- left_join(shp_mr,shp_sf %>% select(-nome), by = "MicroRegion")
+shp_mr <- shp_mr %>% group_by(date, MicroRegion, nome) %>% 
+  summarise(confirmed_mr = sum(confirmed), new_cases_mr = sum(new_cases))
+
+casos_por_cidade_d0 <- shp_mr  %>% 
+  filter(confirmed_mr > 0 ) %>% 
+  arrange(date,nome) %>%
+  group_by(nome) %>% 
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((new_cases_mr- lag(new_cases_mr))/lag(new_cases_mr))*100,
+         g_total_cases = ((confirmed_mr- lag(confirmed_mr))/lag(confirmed_mr))*100
+        ) %>% 
+  select(date,nome,days_from_first,g_new_cases,g_total_cases)
+
+casos_por_cidade_d10 <- shp_mr  %>% 
+  filter(confirmed_mr > 10 ) %>% 
+  arrange(date,nome) %>%
+  group_by(nome) %>% 
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,nome,days_from_10th)
+
+shp_mr <- shp_mr %>% 
+  left_join(casos_por_cidade_d0, by = c("date"= "date", "nome" = "nome")) %>% 
+  left_join(casos_por_cidade_d10, by = c("date"= "date", "nome" = "nome")) 
+
+
+p_lin <- shp_mr %>% 
+  filter(confirmed_mr > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed_mr, color=nome)) + geom_line(size=1)+ 
+  labs(title = paste("Evolução por microrregião (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas microrregiões com mais de 10 casos.Os dados são atualizados diariamente.\n Fontehttps://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+
+p_lin %>% ggplotly()
+
+x_seq <-tibble(days_from_10th = seq(0,max(as.integer(shp_mr$days_from_10th),na.rm=T)+2,1)) %>% 
+  mutate(
+    y_log_1d = 10 * 2^(days_from_10th),
+    y_log_2d = 10 * 2^(1/2 * days_from_10th), 
+    y_log_5d = 10 * 2^(1/5 * days_from_10th), 
+    y_log_10d = 10 * 2^(1/10 * days_from_10th))
+
+p_log <- shp_mr %>% 
+  filter(confirmed_mr > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed_mr)) + geom_line(aes(color=nome,label=nome),size=1) +
+   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = "grey") +
+  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por microrregião de SC (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas microrregiões com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal() + annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)
+
+p_log %>% ggplotly()
+```
+## Códigos
+
+Os códigos utilizados e análises estão disponíveis em https://github.com/dpavancini/covid19.
+
+
+
+
+
+
