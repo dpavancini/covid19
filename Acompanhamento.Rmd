@@ -34,12 +34,47 @@ Sys.setenv("plotly_username"=Sys.getenv("PLOTLY_USERNAME"))
 Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
 
 # If prod = T, publish plots online
-prod = T
+prod = F
 
 
 # Plot Margins
 
 m <- list(l=100, r=100, t=100, b=100)
+
+custom_layout <- function(pltly_obj,title,subtitle,source) {
+  pltly_obj <- pltly_obj %>% layout(title=list(text=paste(title),
+                                   font=list(family="Raleway", color="#000000",size=16),
+                                   xref='paper',
+                                   yref='paper',
+                                   x=0,
+                                   y=1.1,
+                                   xanchor='left', 
+                                   yanchor='top'),
+                                   margin=m,
+                                   autosize = F,
+                                   annotations = list(list(x = 0, 
+                                                      y = 1.1,
+                                                      text = subtitle,
+                                                      showarrow = F,
+                                                      xref='paper',
+                                                      yref='paper', 
+                                                      xanchor='left', 
+                                                      yanchor='top', 
+                                                      xshift=0, 
+                                                      yshift=-0.8,
+                                                      font=list(size=14, color="#000000", family="Raleway")),
+                                   list(x = 0.8, 
+                                        y = -0.05,
+                                        text = source, 
+                                        showarrow = F,
+                                        xref='paper',
+                                        yref='paper', 
+                                        xanchor='left', 
+                                        yanchor='auto', 
+                                        xshift=0, 
+                                        yshift=0,
+                                        font=list(size=12, color="grey", family="Raleway"))))
+}
 ```
 
 ## Acompanhamento COVID-19
@@ -106,9 +141,16 @@ readUrl <- function() {
 }
 
 data <- readUrl()
-data <- data %>% select(DateRep = dateRep, Day = day, Month = month, Year = year, Cases = cases, Deaths = deaths, 
-                        CountriesAndTerritories = countriesAndTerritories, GeoId = geoId, 
-                        CountryterritoryCode = countryterritoryCode, PopData2018 = popData2018)
+data <- data %>% select(daterep = DateRep,
+                        day = Day,
+                        onth = Month,
+                        year = Year,
+                        cases = Cases,
+                        deaths = Deaths, 
+                        countriesAndTerritories = CountriesAndTerritories,
+                        geoId =  GeoId,
+                        countryterritoryCode = CountryterritoryCode,
+                        popData2018 = PopData2018)
 # Prepare data
 
 dados_preparados_d0 <- data %>% 
@@ -166,38 +208,11 @@ p <- dados_selecionados %>%
   scale_linetype_manual(name="País",labels=labels, breaks=breaks, values=c(1,2,3,4,5,6,7)) +
 theme(legend.position="bottom",plot.title = element_text(hjust = 0.5)) 
 
-p_1 <- p %>% ggplotly() %>% layout(title=list(text=paste("<b>Evolução após 1º caso</b>"),
-                                   font=list(family="Raleway", color="#000000",size=16),
-                                   xref='paper',
-                                   yref='paper',
-                                   x=0,
-                                   y=1.1,
-                                   xanchor='left', 
-                                   yanchor='top'),
-                                   margin=m,
-                                   autosize = F,
-                                   annotations = list(list(x = 0, 
-                                                      y = 1.1,
-                                                      text = "Em escala logarítimica",
-                                                      showarrow = F,
-                                                      xref='paper',
-                                                      yref='paper', 
-                                                      xanchor='left', 
-                                                      yanchor='top', 
-                                                      xshift=0, 
-                                                      yshift=-0.8,
-                                                      font=list(size=14, color="#000000", family="Raleway")),
-                                   list(x = 0.8, 
-                                        y = -0.05,
-                                        text = paste0("Fonte:ECDC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))), 
-                                        showarrow = F,
-                                        xref='paper',
-                                        yref='paper', 
-                                        xanchor='left', 
-                                        yanchor='auto', 
-                                        xshift=0, 
-                                        yshift=0,
-                                        font=list(size=12, color="grey", family="Raleway"))))
+
+p_1 <- p %>% ggplotly() %>% custom_layout(paste("<b>Evolução após 1º caso</b>"),
+                                          "Em escala logarítimica",
+                                          paste0("Fonte:ECDC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y")))
+                                          )
 p_1
   # Upload to chart studio
 if (prod == TRUE) {api_create(p_1, filename = "covid-world-1st-plot", fileopt = "overwrite")}
