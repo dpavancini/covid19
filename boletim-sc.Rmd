@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE,message=FALSE,cache=FALSE)
 
 #these libraries are necessary
 library(readxl)
@@ -190,7 +190,7 @@ gif_file <- save_gif({for (i in seq(1,N)){
     print(g)
     print(paste(ii,"out of",30))
   }
-}, gif_file= paste0("./COVID19_SC.gif"),width = 1200, height = 1000, res = 144, delay=1/15)
+}, gif_file= paste0("./COVID19_SC.gif"),width = 800, height = 600, res = 144, delay=1/15)
 
 ```
 
