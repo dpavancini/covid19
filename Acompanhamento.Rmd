@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE,message=FALSE,cache=FALSE)
-
+rm(list=ls())
 #these libraries are necessary
 library(readxl)
 library(httr)
@@ -141,19 +141,21 @@ readUrl <- function() {
 }
 
 data <- readUrl()
-data <- data %>% select(daterep = DateRep,
-                        day = Day,
-                        onth = Month,
-                        year = Year,
-                        cases = Cases,
-                        deaths = Deaths, 
-                        countriesAndTerritories = CountriesAndTerritories,
-                        geoId =  GeoId,
-                        countryterritoryCode = CountryterritoryCode,
-                        popData2018 = PopData2018)
+
+
+data_clean <- data %>% select(dateRep = dateRep,
+                        day = day,
+                        month = month,
+                        year = year,
+                        cases = cases,
+                        deaths = deaths, 
+                        countriesAndTerritories = countriesAndTerritories,
+                        geoId =  geoId,
+                        countryterritoryCode = countryterritoryCode,
+                        popData2018 = popData2018)
 # Prepare data
 
-dados_preparados_d0 <- data %>% 
+dados_preparados_d0 <- data_clean %>% 
   filter(cases > 0 ) %>% 
   arrange(dateRep,geoId) %>%
   group_by(geoId) %>% 
@@ -171,7 +173,7 @@ dados_preparados_d100 <- dados_preparados_d0 %>%
   mutate(days_from_100th = as.Date(dateRep, format= "%Y-%m-%d") - as.Date(min(dateRep), format= "%Y-%m-%d")) %>% 
   select(dateRep,geoId,days_from_100th)
 
-dados_completos <- data %>% 
+dados_completos <- data_clean %>% 
   left_join(dados_preparados_d0, by= c("geoId" = "geoId", "dateRep" = "dateRep")) %>% 
   left_join(dados_preparados_d100, by= c("geoId" = "geoId", "dateRep" = "dateRep"))
 ```
