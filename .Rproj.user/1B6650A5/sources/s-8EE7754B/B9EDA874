@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1587162937051.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "B9EDA874",
+    "lastKnownWriteTime" : 1587151059,
+    "last_content_update" : 1587151059,
+    "path" : "C:/Users/anaax/teste/minhas mod/boletim-sc-mod1.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "371,0",
+        "scrollLine" : "339"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

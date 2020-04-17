@@ -1,0 +1,76 @@
+"0","knitr::opts_chunk$set(echo = FALSE, warning=FALSE,message=FALSE)"
+"0","#these libraries are necessary"
+"0","library(readxl)"
+"0","library(httr)"
+"0","library(ggplot2)"
+"2","Registered S3 method overwritten by 'dplyr':
+  method           from
+  print.rowwise_df     
+"
+"0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"0","library(tidyr)"
+"0","library(ggrepel)"
+"0","library(plotly)"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"
+"2","Registered S3 methods overwritten by 'htmltools':
+  method               from         
+  print.html           tools:rstudio
+  print.shiny.tag      tools:rstudio
+  print.shiny.tag.list tools:rstudio
+"
+"2","Registered S3 method overwritten by 'htmlwidgets':
+  method           from         
+  print.htmlwidget tools:rstudio
+"
+"2","
+Attaching package: ‘plotly’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    last_plot
+
+"
+"2","The following object is masked from ‘package:httr’:
+
+    config
+
+"
+"2","The following object is masked from ‘package:stats’:
+
+    filter
+
+"
+"2","The following object is masked from ‘package:graphics’:
+
+    layout
+
+"
+"0","# library(ggflags)"
+"0","options(scipen=999)"
+"0",""
+"0",""
+"0","# Common theme"
+"0",""
+"0","custom_theme <- theme_minimal() + theme(legend.position=""bottom"","
+"0","      text = element_text(family = ""Times""),"
+"0","      plot.title = element_text(hjust = 0,size=12, face = ""bold""),"
+"0","      axis.text = element_text(color = ""#999999""),"
+"0","      axis.title = element_text(color = ""#999999""))"

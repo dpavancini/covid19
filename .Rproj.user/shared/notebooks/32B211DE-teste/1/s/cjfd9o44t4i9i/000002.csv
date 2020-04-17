@@ -1,0 +1,17 @@
+"0","# line chart moving.. will be improved--
+line_chart <- ggplot(
+  data,
+  aes(x = date, y=confirmed, group = city,colour = factor(city), label = city)
+  ) +
+  geom_line()+
+  scale_color_viridis_d() +
+  labs(title = 'Evolução dos cados de COVID-19 por cidade em Santa Catarina: {frame_time}', x = ""Dias desde o primeiro caso"", y = ""Casos Confirmados"") +
+  geom_text(color = ""black"",size = 3)+
+  # coord_flip()+
+  theme(legend.position = ""none"") +
+  transition_time(date)+
+  ease_aes('linear')
+"
+"2","Error in ggplot(data, aes(x = date, y = confirmed, group = city, colour = factor(city),  : 
+  não foi possível encontrar a função ""ggplot""
+"

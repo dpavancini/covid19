@@ -1,0 +1,176 @@
+---
+title: "MAPAS EMPREGOS TKIBS BRASIL"
+author: "ANA CLAUDIA GARCIA"
+date: "24 de fevereiro de 2020"
+output: html_document
+---
+
+## Bibliotecas utilizadas
+```{r setup, include=T, echo=TRUE,  message = FALSE, warning=FALSE}
+
+# libraries
+options(scipen = 999)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(leaflet)
+library(knitr)
+library(readr)
+library(DT)
+library(data.table)
+library(rgdal)
+library(sf)
+
+```
+
+### Código utilizado para ajustar os dados antes de plotar no mapa
+```{r, echo=T, message = FALSE, warning=FALSE}
+
+# Dados referentes à geometria das mesoregiões brasileiras
+shp <- rgdal::readOGR("Mapa\\.", "BRMEE250GC_SIR", stringsAsFactors=FALSE, encoding = "windows-1252")
+
+# Ajuste dos nomes das mesoregiões para bater com os nomes da RAIS
+shp[[1]] <- gsub("ÃƒÆ’","Ã", as.character(shp[[1]]))
+# shp[[1]] <- gsub("Ãƒâ€œ","Ó", as.character(shp[[1]]))
+shp[[1]] <- gsub("Ãƒ","Í", as.character(shp[[1]]))
+shp[[1]] <- gsub("Ãƒâ€°","É", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€¢","Õ", as.character(shp[[1]]))
+shp[[1]] <- toupper(iconv(shp[[1]] , to = "ASCII//TRANSLIT"))
+
+# Dados da RAIS
+DADOS <- read.csv2("./Dados/mesoregioes_pessoasempregadas_v2.csv")
+
+# Ajuste do encoding para ficar no mesmo padrão do IBGE
+DADOS$mesoregiao_ajust <- toupper(iconv(DADOS$mesoregiao_ajust , to = "ASCII//TRANSLIT"))
+DADOS <-DADOS %>% filter(`CNAE.2.0.Grupo` != "Total") %>% group_by(mesoregiao, mesoregiao_ajust) %>% 
+  mutate(ano2008 = sum(X2008), ano2012 = sum(X2012), ano2018 = sum(X2018)) %>% 
+  select(mesoregiao, mesoregiao_ajust, ano2008, ano2012, ano2018) %>% 
+  distinct()
+
+# Dados população para ponderar (não utilizado)
+# pop_meso <- read.csv2("./Dados/Tabela 202 - pop 2010.csv", encoding = "UTF-8")
+
+#teste para verificar se todos os nomes das mesoregiões foram corrigidos
+teste <- DADOS %>% filter(!mesoregiao_ajust %in% shp[[1]])
+teste2 <- shp[[1]]
+teste2 <- as.data.frame(teste2)
+teste2 <- filter(teste2,!teste2 %in% DADOS$mesoregiao_ajust)
+#testes ok
+
+
+# níveis de emprego para conseguir visualizar no mapa
+DADOS_n <- c("0 - 2500", "2501 - 5000", "5001 - 7500", "7501 - 10000", "10001 - 12500", "12501 - 15000", "15001 - 17500", "17501 - 20000", "Acima de 20.000")
+breaks_DADOS <- c(0, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, Inf)
+DADOS$Faixa_2008 <- cut(DADOS$ano2008, breaks_DADOS, DADOS_n, include.lowest = T)
+DADOS$Faixa_2012 <- cut(DADOS$ano2012, breaks_DADOS, DADOS_n, include.lowest = T)
+DADOS$Faixa_2018 <- cut(DADOS$ano2018, breaks_DADOS, DADOS_n, include.lowest = T)
+
+# Junção das duas bases de dados
+
+brasileiropg <- merge(shp, DADOS, by.x = "NM_MESO", by.y = "mesoregiao_ajust")
+
+for (i in 1:139) {
+  if(brasileiropg@data[["Faixa_2008"]][i] == "NA" | is.na(brasileiropg@data[["Faixa_2008"]][i])){
+    brasileiropg@data[["Faixa_2008"]][i] <- "0 - 2500"
+  }
+  if(brasileiropg@data[["Faixa_2012"]][i] == "NA" | is.na(brasileiropg@data[["Faixa_2012"]][i])){
+    brasileiropg@data[["Faixa_2012"]][i] <- "0 - 2500"
+  }
+    if(brasileiropg@data[["Faixa_2018"]][i] == "NA" | is.na(brasileiropg@data[["Faixa_2018"]][i])){
+    brasileiropg@data[["Faixa_2018"]][i] <- "0 - 2500"
+    }
+  }
+  
+```
+
+### EMPREGOS TKIBS 2008
+
+```{r, message = FALSE, warning=FALSE}
+# atribuição de cor para o mapa
+# binpal <- colorQuantile(heat.colors(12), brasileiropg$Faixa_2008, n = 12, reverse = T)
+factpal <- colorFactor('Greens', brasileiropg$Faixa_2008)
+
+# mapa. 2008
+map_br_2008 <- leaflet(data = brasileiropg) %>%
+        addProviderTiles("CartoDB.Positron") %>%
+        addPolygons(stroke = F, smoothFactor = 0.2,
+                    fillOpacity = 0.8,
+                    dashArray = "3",
+                    weight = 0.5,
+                    color = ~factpal(Faixa_2008),
+                    opacity = 1,
+                    popup = ~paste(sep = " ",
+                                   "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+                      "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2008),
+             group = "2008") %>%
+        addLegend("bottomright", pal = factpal, values = ~brasileiropg$Faixa_2008,
+                  title = "Pessoas empregadas em T-KIBS",
+                  opacity = 1) 
+
+# mapview::mapshot(map_br_2008, "./map_Brasil_2008.html")
+
+```
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+map_br_2008
+```
+
+### EMPREGOS TKIBS 2012
+
+```{r, message = FALSE, warning=FALSE}
+#mapa. 2012
+factpal <- colorFactor('Greens', brasileiropg$Faixa_2012)
+
+map_br_2012 <- leaflet(data = brasileiropg) %>%
+        addProviderTiles("CartoDB.Positron") %>%
+        addPolygons(stroke = F, smoothFactor = 0.2,
+                    fillOpacity = 0.8,
+                    dashArray = "3",
+                    weight = 0.5,
+                    color = ~factpal(Faixa_2012),
+                    opacity = 1,
+                    popup = ~paste(sep = " ",
+                                   "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+                      "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2012),
+             group = "2012") %>%
+        addLegend("bottomright", pal = factpal, values = ~brasileiropg$Faixa_2012,
+                  title = "Pessoas empregadas em T-KIBS",
+                  opacity = 1) 
+```
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+map_br_2012
+```
+
+### EMPREGOS TKIBS 2018
+
+```{r, message = FALSE, warning=FALSE}
+# mapa. 2018
+factpal <- colorFactor('Greens', brasileiropg$Faixa_2018)
+
+map_br_2018 <- leaflet(data = brasileiropg) %>%
+        addProviderTiles("CartoDB.Positron") %>%
+        addPolygons(stroke = F, smoothFactor = 0.2,
+                    fillOpacity = 0.8,
+                    dashArray = "3",
+                    weight = 0.5,
+                    color = ~factpal(Faixa_2018),
+                    opacity = 1,
+                    popup = ~paste(sep = " ",
+                                   "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+                      "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2018),
+             group = "2018") %>%
+        addLegend("bottomright", pal = factpal, values = ~brasileiropg$Faixa_2018,
+                  title = "Pessoas empregadas em T-KIBS",
+                  opacity = 1) 
+
+# mapview::mapshot(map_br_2008, "./map_Brasil_2008.html")
+```
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+map_br_2018
+```
+

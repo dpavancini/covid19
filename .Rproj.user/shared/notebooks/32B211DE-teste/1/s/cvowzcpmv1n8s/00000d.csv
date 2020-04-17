@@ -1,0 +1,20 @@
+"0","p_log <- data %>% 
+  filter(confirmed > 10) %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(aes(color=city,label=city),size=1) +
+   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = ""grey"") +
+  geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = ""grey"") +
+  geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = ""grey"") +
+  scale_y_continuous(trans=""pseudo_log"") + labs(title = paste(""Evolução por estado (em log) - "",format(Sys.time(), ""%d/%m/%Y"")), caption = ""Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv"") + xlab(""Dias desde 10º caso"") + ylab(""Casos confirmados"")+ theme_minimal() + annotate(""text"", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c(""10 dias para \n duplicar"",""5 dias para \n duplicar"",""2 dias para \n duplicar""), size=3, color = ""grey"",vjust=-1)
+"
+"2","Ignoring unknown aesthetics: label"
+"0","p_log <- data %>% "
+"0","  filter(confirmed > 10) %>% "
+"0","  ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(aes(color=city,label=city),size=1) +"
+"0","   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = ""grey"") +"
+"0","  geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = ""grey"") +"
+"0","  geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = ""grey"") +"
+"0","  scale_y_continuous(trans=""pseudo_log"") + labs(title = paste(""Evolução por estado (em log) - "",format(Sys.time(), ""%d/%m/%Y"")), caption = ""Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv"") + xlab(""Dias desde 10º caso"") + ylab(""Casos confirmados"")+ theme_minimal() + annotate(""text"", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c(""10 dias para \n duplicar"",""5 dias para \n duplicar"",""2 dias para \n duplicar""), size=3, color = ""grey"",vjust=-1)"
+"2","Ignoring unknown aesthetics: label"
+"0","p_log %>% ggplotly()"
+"2","Don't know how to automatically pick scale for object of type difftime. Defaulting to continuous.
+"
