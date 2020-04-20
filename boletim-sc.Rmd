@@ -210,7 +210,7 @@ Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catari
 pal <- colorNumeric(palette = "Reds", domain = shp_sf_last_data$confirmed_per_100k_inhabitants)
 
 # plot heatmap of Covid-19 cases in SC
-leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabitants), confirmed >0), width = "100%") %>%
+map_100k <- leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabitants), confirmed >0), width = "100%") %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(data = shp_sf_last_data,
               smoothFactor = 0.5,
@@ -233,6 +233,7 @@ leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabitants), conf
                   opacity = 0.8)
 
 
+htmlwidgets::saveWidget(map_100k,"map_100k.html")
 ```
 
 \ 
