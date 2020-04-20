@@ -1,0 +1,1025 @@
+---
+title: "ANOTAÇÕES TCC"
+author: "ACG"
+date: "6 de outubro de 2019"
+output: html_document
+---
+```{r}
+
+library(readr)
+library(dplyr)
+# library(tidyr)
+rm_accent <- function(str,pattern="all") {
+  # Rotinas e funções úteis V 1.0
+  # rm.accent - REMOVE ACENTOS DE PALAVRAS
+  # Função que tira todos os acentos e pontuações de um vetor de strings.
+  # Parâmetros:
+  # str - vetor de strings que terão seus acentos retirados.
+  # patterns - vetor de strings com um ou mais elementos indicando quais acentos deverão ser retirados.
+  #            Para indicar quais acentos deverão ser retirados, um vetor com os símbolos deverão ser passados.
+  #            Exemplo: pattern = c("´", "^") retirará os acentos agudos e circunflexos apenas.
+  #            Outras palavras aceitas: "all" (retira todos os acentos, que são "´", "`", "^", "~", "¨", "ç")
+  if(!is.character(str))
+    str <- as.character(str)
+  
+  pattern <- unique(pattern)
+  
+  if(any(pattern=="Ç"))
+    pattern[pattern=="Ç"] <- "ç"
+  
+  symbols <- c(
+    acute = "áéíóúÁÉÍÓÚýÝ",
+    grave = "àèìòùÀÈÌÒÙ",
+    circunflex = "âêîôûÂÊÎÔÛ",
+    tilde = "ãõÃÕñÑ",
+    umlaut = "äëïöüÄËÏÖÜÿ",
+    cedil = "çÇ"
+  )
+  
+  nudeSymbols <- c(
+    acute = "aeiouAEIOUyY",
+    grave = "aeiouAEIOU",
+    circunflex = "aeiouAEIOU",
+    tilde = "aoAOnN",
+    umlaut = "aeiouAEIOUy",
+    cedil = "cC"
+  )
+
+  accentTypes <- c("´","`","^","~","¨","ç")
+
+  if(any(c("all","al","a","todos","t","to","tod","todo")%in%pattern)) # opcao retirar todos
+    return(chartr(paste(symbols, collapse=""), paste(nudeSymbols, collapse=""), str))
+
+  for(i in which(accentTypes%in%pattern))
+    str <- chartr(symbols[i],nudeSymbols[i], str)
+
+  return(str)
+}
+
+```
+
+
+```{r}
+#------------SANTA CATARINA - PESSOAS EMPREGADAS
+
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+CNAE_SC_2006_2018 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/00 Pessoas empregadas SC - 2007-2018 - CNAE2.0.csv")
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- toupper(CNAE_SC_2006_2018$`CNAE.2.0.Grupo`)
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- rm_accent(CNAE_SC_2006_2018$CNAE.2.0.Grupo)
+
+CNAE_SC <- left_join(CNAE_SC_2006_2018, CNAES_GERAL %>% select(05, 06, 11, 12, 13, 14), by = c("CNAE.2.0.Grupo" = "DESCRICAO_GRUPO")) %>% distinct()
+# CNAE_SC <- CNAE_SC %>% 
+#   filter(IT..OCDE != "")
+
+x2018 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2018) %>% 
+  mutate(ANO = "2018") 
+colnames(x2018) <- c("ESTADO", "GRUPO_CNAE","CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2017 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2017) %>% 
+  mutate(ANO = "2017") 
+colnames(x2017) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2016 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2016) %>% 
+  mutate(ANO = "2016") 
+colnames(x2016) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2015 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2015) %>% 
+  mutate(ANO = "2015") 
+colnames(x2015) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2014 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2014) %>% 
+  mutate(ANO = "2014") 
+colnames(x2014) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2013 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2013) %>% 
+  mutate(ANO = "2013") 
+colnames(x2013) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2012 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2012) %>% 
+  mutate(ANO = "2012") 
+colnames(x2012) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2011 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2011) %>% 
+  mutate(ANO = "2011") 
+colnames(x2011) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2010 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2010) %>% 
+  mutate(ANO = "2010") 
+colnames(x2010) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2009 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2009) %>% 
+  mutate(ANO = "2009") 
+colnames(x2009) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2008 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2008) %>% 
+  mutate(ANO = "2008") 
+colnames(x2008) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2007 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2007) %>% 
+  mutate(ANO = "2007") 
+colnames(x2007) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2006 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2006) %>% 
+  mutate(ANO = "2006") 
+colnames(x2006) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_SC_N <- bind_rows(x2006,x2007,x2008,x2009,x2010,x2011,x2012,x2013,x2014,x2015,x2016,x2017,x2018) 
+write.csv2(CNAE_SC_N,"./Dados/RAIS - Pessoas Empregadas/01 Pessoas empregadas SC - 2007-2018 - CNAE2.0_organizado.csv" )
+
+```
+
+```{r}
+
+#-------SANTA CATARINA
+teste <- CNAE_SC_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/01 Pessoas empregadas SC - 2007-2018-contagem_empresas_SC_CLASSOCDE.csv", 
+           row.names = F)
+```
+
+
+```{r}
+#------------BRASIL - PESSOAS EMPREGADAS
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+CNAE_BR_2006_2018 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/10 Pessoas empregadas BR - 2007-2018 - CNAE2.0.csv")
+CNAE_BR_2006_2018$CNAE.2.0.Grupo <- toupper(CNAE_BR_2006_2018$CNAE.2.0.Grupo)
+CNAE_BR_2006_2018$CNAE.2.0.Grupo <- rm_accent(CNAE_BR_2006_2018$CNAE.2.0.Grupo)
+
+CNAE_BR <- left_join(CNAE_BR_2006_2018, CNAES_GERAL %>% select(05, 06, 11, 12, 13, 14), by = c("CNAE.2.0.Grupo" = "DESCRICAO_GRUPO")) %>% distinct()
+# CNAE_BR <- CNAE_BR %>% 
+#   filter(IT..OCDE != "")
+
+x2018 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2018) %>% 
+  mutate(ANO = "2018") 
+colnames(x2018) <- c("ESTADO", "GRUPO_CNAE","CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2017 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2017) %>% 
+  mutate(ANO = "2017") 
+colnames(x2017) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2016 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2016) %>% 
+  mutate(ANO = "2016") 
+colnames(x2016) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2015 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2015) %>% 
+  mutate(ANO = "2015") 
+colnames(x2015) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2014 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2014) %>% 
+  mutate(ANO = "2014") 
+colnames(x2014) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2013 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2013) %>% 
+  mutate(ANO = "2013") 
+colnames(x2013) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2012 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2012) %>% 
+  mutate(ANO = "2012") 
+colnames(x2012) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2011 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2011) %>% 
+  mutate(ANO = "2011") 
+colnames(x2011) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2010 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2010) %>% 
+  mutate(ANO = "2010") 
+colnames(x2010) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2009 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2009) %>% 
+  mutate(ANO = "2009") 
+colnames(x2009) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2008 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2008) %>% 
+  mutate(ANO = "2008") 
+colnames(x2008) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2007 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2007) %>% 
+  mutate(ANO = "2007") 
+colnames(x2007) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2006 <- CNAE_BR %>% 
+  select(01, 02, IT..OCDE, X2006) %>% 
+  mutate(ANO = "2006") 
+colnames(x2006) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_BR_N <- bind_rows(x2006,x2007,x2008,x2009,x2010,x2011,x2012,x2013,x2014,x2015,x2016,x2017,x2018) 
+write.csv2(CNAE_BR_N,"./Dados/RAIS - Pessoas Empregadas/11 Pessoas empregadas BR - 2007-2018 - CNAE2.0_organizado.csv" )
+
+```
+
+```{r}
+
+#-------BRASIL
+teste <- CNAE_BR_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/11 Pessoas empregadas BR - 2007-2018-contagem_empresas_BR_CLASSOCDE.csv", 
+           row.names = F)
+```
+
+```{r}
+CNAE_95 <- read.csv2("C://Users/anaax/Desktop/corresp_CNAE_10.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAE_95)[1:2] <- c("CNAE_DESC", "CNAE_CODE")
+CNAE_95$CNAE_DESC <- toupper(CNAE_95$CNAE_DESC)
+CNAE_95$CNAE_DESC <- rm_accent(CNAE_95$CNAE_DESC)
+
+CNAE_95_n <- read.csv2("C://Users/anaax/Desktop/CORRESP_CNAE10.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAE_95_n) <- c("CNAE_DESC")
+CNAE_95_n$CNAE_DESC <- toupper(CNAE_95_n$CNAE_DESC)
+CNAE_95_n$CNAE_DESC <- rm_accent(CNAE_95_n$CNAE_DESC)
+
+nove_cnae <- left_join(CNAE_95_n,CNAE_95, by = "CNAE_DESC")
+
+CNAE_SC_2002_2005 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/20 Pessoas empregadas SC - 2002-2006 - CNAE1.0.csv")
+CNAE_SC_2002_2005$CNAE.95.Classe <- toupper(CNAE_SC_2002_2005$CNAE.95.Classe)
+CNAE_SC_2002_2005$CNAE.95.Classe <- rm_accent(CNAE_SC_2002_2005$CNAE.95.Classe)
+
+CNAE_SC <- left_join(CNAE_SC_2002_2005, nove_cnae, by = c("CNAE.95.Classe" = "CNAE_DESC"))
+CNAE_SC <- CNAE_SC %>% filter(CNAE.95.Classe != "TOTAL")
+CNAE_SC <- CNAE_SC %>% 
+  filter(IT..OCDE != "")
+
+x2002 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2002) %>% 
+  mutate(ANO = "2002") 
+colnames(x2002) <- c("ESTADO","GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2003 <- CNAE_SC %>% 
+  select(01,02, IT..OCDE, X2003) %>% 
+  mutate(ANO = "2003") 
+colnames(x2003) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2004 <- CNAE_SC %>% 
+  select(01,02, IT..OCDE, X2004) %>% 
+  mutate(ANO = "2004") 
+colnames(x2004) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2005 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2005) %>% 
+  mutate(ANO = "2005") 
+colnames(x2005) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2005 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2006) %>% 
+  mutate(ANO = "2006") 
+colnames(x2005) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_SC_N <- bind_rows(x2002,x2003,x2004,x2004, x2005, x2006) 
+write.csv2(CNAE_SC_N,"./Dados/RAIS - Pessoas Empregadas/21 Pessoas empregadas SC - 2002-2006 - CNAE1.0_organizado.csv" )
+```
+
+```{r}
+
+#-------SANTA CATARINA
+teste <- CNAE_SC_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/21 Pessoas empregadas SC - 2002-2006-contagem_empresas_SC_CLASSOCDE.csv", 
+           row.names = F)
+```
+
+```{r}
+#------------SC - EMPRESAS ATIVAS ####### TERMINAR
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+CNAE_SC_2006_2018 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Empresas Ativas/00 Empresas Ativas SC - 2007-2018 - CNAE2.0.csv")
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- toupper(CNAE_SC_2006_2018$CNAE.2.0.Grupo)
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- rm_accent(CNAE_SC_2006_2018$CNAE.2.0.Grupo)
+
+CNAE_SC <- left_join(CNAE_SC_2006_2018, CNAES_GERAL %>% select(05, 06, 11, 12, 13, 14), by = c("CNAE.2.0.Grupo" = "DESCRICAO_GRUPO")) %>% distinct()
+# CNAE_BR <- CNAE_BR %>% 
+#   filter(IT..OCDE != "")
+
+
+
+```
+
+
+
+```{r}
+CNAE_95 <- read.csv2("C://Users/anaax/Desktop/corresp_CNAE_10.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAE_95)[1:2] <- c("CNAE_DESC", "CNAE_CODE")
+CNAE_95$CNAE_DESC <- toupper(CNAE_95$CNAE_DESC)
+CNAE_95$CNAE_DESC <- rm_accent(CNAE_95$CNAE_DESC)
+
+CNAE_95_n <- read.csv2("C://Users/anaax/Desktop/CORRESP_CNAE10.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAE_95_n) <- c("CNAE_DESC")
+CNAE_95_n$CNAE_DESC <- toupper(CNAE_95_n$CNAE_DESC)
+CNAE_95_n$CNAE_DESC <- rm_accent(CNAE_95_n$CNAE_DESC)
+
+nove_cnae <- left_join(CNAE_95_n,CNAE_95, by = "CNAE_DESC")
+
+
+
+CNAE_BR_2002_2005 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/20 Pessoas empregadas SC - 2002-2006 - CNAE1.0.csv")
+CNAE_BR_2002_2005$CNAE.95.Classe <- toupper(CNAE_BR_2002_2005$CNAE.95.Classe)
+CNAE_BR_2002_2005$CNAE.95.Classe <- rm_accent(CNAE_BR_2002_2005$CNAE.95.Classe)
+
+CNAE_BR <- left_join(CNAE_BR_2002_2005, nove_cnae, by = c("CNAE.95.Classe" = "CNAE_DESC"))
+CNAE_BR <- CNAE_BR %>% filter(CNAE.95.Classe != "TOTAL")
+CNAE_BR <- CNAE_BR %>% 
+  filter(IT..OCDE != "")
+
+x2002 <- CNAE_BR %>% 
+  select(01, 08, X2002) %>% 
+  mutate(ANO = "2002") 
+colnames(x2002) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2003 <- CNAE_BR %>% 
+  select(01, 08, X2003) %>% 
+  mutate(ANO = "2003") 
+colnames(x2003) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2004 <- CNAE_BR %>% 
+  select(01, 08, X2004) %>% 
+  mutate(ANO = "2004") 
+colnames(x2004) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2005 <- CNAE_BR %>% 
+  select(01, 08, X2005) %>% 
+  mutate(ANO = "2005") 
+colnames(x2005) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_BR_N <- bind_rows(x2002,x2003,x2004,x2004, x2005) 
+
+teste_br <- CNAE_BR_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste_br, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/contagem_empresas_BR_CLASSOCDE_2002-2005.csv", 
+           row.names = F)
+```
+
+
+
+```{r}
+#------------SANTA CATARINA - QUANTIDADE DE FUNCIONÁRIOS
+
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+VBTI_CNAE <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/PESSOAS_EMPREGADAS_INDUSTRIA_2007-2017.csv",
+                       encoding = "UTF-8", colClasses = "character")
+colnames(VBTI_CNAE)[1] <- "CNAE_COD"
+
+VBTI_CNAE <- left_join(VBTI_CNAE, CNAES_GERAL %>% 
+                       select(GRUPO,CLASS_OCDE = IT..OCDE), by = c("CNAE_COD" = "GRUPO"))
+VBTI_CNAE <- VBTI_CNAE %>% 
+  filter(CLASS_OCDE != "")
+
+write.csv2(VBTI_CNAE,"./Dados/PESSOAS_EMPREGADAS_CNAE_2007-2017_v2.csv", row.names = F)
+
+```
+
+```{r}
+
+#-------SANTA CATARINA
+teste <- CNAE_SC_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/contagem_empresas_SC_CLASSOCDE.csv", 
+           row.names = F)
+```
+
+
+
+
+```{r}
+#------- gastos C&T BR
+transf_BR <- read.csv2("./Dados/transferencia BR.csv", encoding = "UTF-8")
+colnames(transf_BR) <- c("data", "Tipo", "Acao_Orcam", "Ling_Cidada", "Prog_Orcam", "Funcao", "Tipo_Favor", "UF", "Cidade", "Valor")
+#ANO
+transf_BR$ano <- gsub(".*/","", transf_BR$data)
+transf_BR$ano <- paste("20",transf_BR$ano, sep = "")
+#VALOR
+transf_BR$Valor <- gsub(" ","", transf_BR$Valor)
+transf_BR$Valor <- as.numeric(gsub(",", ".", gsub("\\.", "", transf_BR$Valor)))
+
+novo_transf <- transf_BR %>% 
+  filter(!is.na(Valor)) %>% 
+  select(ano, Valor) %>% 
+  group_by(ano) %>% 
+  summarise(sum(Valor))
+
+write.csv2(novo_transf, "./Dados/novo_trans_federal 2014-2018.csv", row.names = F)
+```
+
+```{r}
+#####------ alunos matriculados
+
+base_geocapes <- read.csv2("./Dados/geocapes - 1995 a 2018 - uf.csv", encoding = "UTF-8")
+colnames(base_geocapes)[1] <- "ANO"
+
+BASE_GEOCAPES_SUL <- base_geocapes %>% filter(`Região` == "SUL") %>% 
+  select(ANO,`Região`,`Coordenador.Geral.IsF`:`Total.Linha`) %>% 
+  group_by(`Região`, ANO) %>% 
+  summarise_each(sum)
+
+write.csv2(BASE_GEOCAPES_SUL, "./Dados/Geocapes - SUL - 1995 a 2018 - agrupado.csv", row.names = F)
+
+BASE_GEOCAPES_SC <- base_geocapes %>% filter(`UF` == "SC") %>% 
+  select(ANO,`UF`,`Coordenador.Geral.IsF`:`Total.Linha`) %>% 
+  group_by(`UF`, ANO) %>% 
+  summarise_each(sum)
+
+write.csv2(BASE_GEOCAPES_SC, "./Dados/Geocapes - SC - 1995 a 2018 - agrupado.csv", row.names = F)
+
+#####------ alunos matriculados
+
+base_geocapes <- read.csv2("./Dados/geocapes - 1998 a 2018 - uf - alunos matric.csv", encoding = "UTF-8")
+colnames(base_geocapes)[1] <- "ANO"
+
+BASE_GEOCAPES_SUL <- base_geocapes %>% filter(`Região` == "SUL") %>% 
+  select(ANO,`Região`,`Doutorado...Matriculado`:`Total.Linha`) %>% 
+  group_by(`Região`, ANO) %>% 
+  summarise_each(sum)
+
+write.csv2(BASE_GEOCAPES_SUL, "./Dados/Geocapes - SUL - 1998 a 2018 - alunos agrupado.csv", row.names = F)
+
+BASE_GEOCAPES_SC <- base_geocapes %>% filter(`UF` == "SC") %>% 
+  select(ANO,`UF`,`Doutorado...Matriculado`:`Total.Linha`) %>% 
+  group_by(`UF`, ANO) %>% 
+  summarise_each(sum)
+
+write.csv2(BASE_GEOCAPES_SC, "./Dados/Geocapes - SC - 1995 a 2018 - alunos agrupado.csv", row.names = F)
+```
+
+```{r}
+CNAE_BR_2006_2017 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/Pessoas empregadas 2002 - 2017 - CNAES selecionados - sulbr.csv")
+CNAE_BR_2006_2017$CNAE.2.0.Grupo <- toupper(CNAE_BR_2006_2017$CNAE.2.0.Grupo)
+CNAE_BR_2006_2017$CNAE.2.0.Grupo <- rm_accent(CNAE_BR_2006_2017$CNAE.2.0.Grupo)
+
+CNAE_BR <- left_join(CNAE_BR_2006_2017, CNAES_GERAL, by = c("CNAE.2.0.Grupo" = "DESCRICAO_GRUPO"))
+CNAE_BR <- CNAE_BR %>% filter(CNAE.2.0.Grupo != "TOTAL")
+CNAE_BR <- CNAE_BR %>% 
+  filter(IT..OCDE != "")
+
+x2017 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2017) %>% 
+  mutate(ANO = "2017") 
+colnames(x2017) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2016 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2016) %>% 
+  mutate(ANO = "2016") 
+colnames(x2016) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2015 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2015) %>% 
+  mutate(ANO = "2015") 
+colnames(x2015) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2014 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2014) %>% 
+  mutate(ANO = "2014") 
+colnames(x2014) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2013 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2013) %>% 
+  mutate(ANO = "2013") 
+colnames(x2013) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2012 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2012) %>% 
+  mutate(ANO = "2012") 
+colnames(x2012) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2011 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2011) %>% 
+  mutate(ANO = "2011") 
+colnames(x2011) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2010 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2010) %>% 
+  mutate(ANO = "2010") 
+colnames(x2010) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2009 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2009) %>% 
+  mutate(ANO = "2009") 
+colnames(x2009) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2008 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2008) %>% 
+  mutate(ANO = "2008") 
+colnames(x2008) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2007 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2007) %>% 
+  mutate(ANO = "2007") 
+colnames(x2007) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2006 <- CNAE_BR %>% 
+  select(01, IT..OCDE, X2006) %>% 
+  mutate(ANO = "2006") 
+colnames(x2006) <- c("ESTADO", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_BR_N <- bind_rows(x2006,x2007,x2008,x2009,x2010,x2011,x2012,x2013,x2014,x2015,x2016,x2017) 
+
+teste_br <- CNAE_BR_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste_br, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/Número de pessoas empregadas SUL-BR por IT.csv", 
+           row.names = F)
+```
+
+```{r}
+names <- read_delim("./Dados/tb_municip_layout.txt", delim = ";")
+municipios_BR <- read.csv2("./Dados/tb_municip.csv",header = F, col.names = names$Coluna)
+municipios_BR <- municipios_BR[,1:9]
+municipios_BR$Nome_UF <- as.character(municipios_BR$Nome_UF)
+
+ufs_BR <- read.csv2("./Dados/RELATORIO_DTB_BRASIL_MUNICIPIO.csv", encoding = "UTF-8")
+ufs_BR <- ufs_BR %>% select(CO_UF = 1,NOME_UF = 2) %>% distinct()
+library("rjson")
+# install.packages("jsonlite")
+library(jsonlite)
+
+##número de vagas por município
+json_file <- "http://api.pgi.gov.br/api/1/serie/2140.json"
+json_data <- jsonlite::fromJSON(paste(readLines(json_file), collapse=""))
+str( jsonlite::fromJSON( json_file ) )
+
+df_num_vagas <- do.call("rbind",json_data[26])
+
+df_num_vagas <- left_join(df_num_vagas, municipios_BR, by = c("municipio_ibge" = "CO_MUNICIP"))
+df_num_vagas <- left_join(df_num_vagas, ufs_BR, by = "CO_UF")
+df_num_vagas <- df_num_vagas %>% 
+  group_by(NOME_UF, ano) %>% 
+  mutate(total = sum(valor)) %>% 
+  distinct(NOME_UF,ano,total)
+
+write.csv2(df_num_vagas, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/MEC - IBGE - universidades/Número de vagas por estado 2005 - 2013.csv", 
+           row.names = F)
+
+## número de graduados por município
+
+json_file <- "http://api.pgi.gov.br/api/1/serie/2516.json"
+json_data <- jsonlite::fromJSON(paste(readLines(json_file), collapse=""))
+str( jsonlite::fromJSON( json_file ) )
+
+df_num_grad <- do.call("rbind",json_data[26])
+
+df_num_grad <- left_join(df_num_grad, municipios_BR, by = c("municipio_ibge" = "CO_MUNICIP"))
+df_num_grad <- left_join(df_num_grad, ufs_BR, by = "CO_UF")
+df_num_grad <- df_num_grad %>% 
+  group_by(NOME_UF, ano) %>% 
+  mutate(total = sum(valor)) %>% 
+  distinct(NOME_UF,ano,total)
+
+write.csv2(df_num_grad, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/MEC - IBGE - universidades/Número de graduados por estado 2005 - 2013.csv", 
+           row.names = F)
+
+```
+
+```{r}
+### pessoas empregadas por nível de escolaridade
+
+#------------SANTA CATARINA - PESSOAS EMPREGADAS
+
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+CNAE_SC_2006_2018 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas com pós-graduação/consulta61548696.csv")
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- toupper(CNAE_SC_2006_2018$`CNAE.2.0.Grupo`)
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- rm_accent(CNAE_SC_2006_2018$CNAE.2.0.Grupo)
+
+CNAE_SC <- left_join(CNAE_SC_2006_2018, CNAES_GERAL %>% select(05, 06, 11, 12, 13, 14), by = c("CNAE.2.0.Grupo" = "DESCRICAO_GRUPO")) %>% distinct()
+
+summary_br <- CNAE_SC %>% 
+  group_by(Local, `IT..OCDE`, ANO) %>% 
+  mutate(Ens_medio = sum(`Médio.Completo`), Ens_Superior = sum(`Superior.Completo`), Mestrado = sum(Mestrado), Doutorado = sum(Doutorado)) %>% 
+  distinct(Local, `IT..OCDE`, ANO, Ens_medio, Ens_Superior, Mestrado, Doutorado) %>% 
+  filter(!is.na(IT..OCDE))
+
+write.csv2(summary_br, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas com pós-graduação/Pessoas empregadas por nível de escolaridade, UF e intensidade tec.csv", 
+           row.names = F)
+```
+
+
+```{r}
+### pessoas empregadas cnae 1.0
+CNAE_95 <- read.csv2("C://Users/anaax/Desktop/corresp_CNAE_10.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAE_95)[1:2] <- c("CNAE_DESC", "CNAE_CODE")
+CNAE_95$CNAE_DESC <- toupper(CNAE_95$CNAE_DESC)
+CNAE_95$CNAE_DESC <- rm_accent(CNAE_95$CNAE_DESC)
+
+CNAE_95_n <- read.csv2("C://Users/anaax/Desktop/CORRESP_CNAE10.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAE_95_n) <- c("CNAE_DESC")
+CNAE_95_n$CNAE_DESC <- toupper(CNAE_95_n$CNAE_DESC)
+CNAE_95_n$CNAE_DESC <- rm_accent(CNAE_95_n$CNAE_DESC)
+
+nove_cnae <- left_join(CNAE_95_n,CNAE_95, by = "CNAE_DESC")
+rm(CNAE_95, CNAE_95_n)
+
+CNAE_BR_2002_2005 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/100 Pessoas empregadas todos os UFs - cnae 1.0.csv")
+CNAE_BR_2002_2005$CNAE.95.Grupo <- toupper(CNAE_BR_2002_2005$CNAE.95.Grupo)
+CNAE_BR_2002_2005$CNAE.95.Grupo <- rm_accent(CNAE_BR_2002_2005$CNAE.95.Grupo)
+
+CNAE_BR <- left_join(CNAE_BR_2002_2005, nove_cnae, by = c("CNAE.95.Grupo" = "CNAE_DESC"))
+CNAE_BR <- CNAE_BR %>% filter(CNAE.95.Grupo != "TOTAL")
+CNAE_BR <- CNAE_BR %>% 
+  filter(IT..OCDE != "")
+
+x2002 <- CNAE_BR %>% 
+  select(01,2,10, X2002) %>% 
+  mutate(ANO = "2002") 
+colnames(x2002) <- c("ESTADO","CNAE_DESC", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2003 <- CNAE_BR %>% 
+  select(01,2,10, X2003) %>% 
+  mutate(ANO = "2003") 
+colnames(x2003) <- c("ESTADO","CNAE_DESC", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2004 <- CNAE_BR %>% 
+  select(01,2,10, X2004) %>% 
+  mutate(ANO = "2004") 
+colnames(x2004) <- c("ESTADO","CNAE_DESC", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2005 <- CNAE_BR %>% 
+  select(01,2,10, X2005) %>% 
+  mutate(ANO = "2005") 
+colnames(x2005) <- c("ESTADO","CNAE_DESC", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_BR_N <- bind_rows(x2002,x2003,x2004,x2004, x2005) 
+
+
+# CNAE_SC_N <- bind_rows(x2007,x2008,x2009,x2010,x2012,x2013,x2014,x2015,x2016,x2017,x2018) 
+write.csv2(CNAE_BR_N,"./Dados/RAIS - Pessoas Empregadas/100 Pessoas empregadas SC - 2007-2018 - CNAE1.0_organizado.csv" )
+
+
+teste_br <- CNAE_BR_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste_br, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/100 contagem_empresas_BR-UF_CLASSOCDE_2002-2005.csv", 
+           row.names = F)
+
+```
+
+```{r}
+#cnae 2.0: pessoas empregadas todas as ufs
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+CNAE_SC_2006_2018 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/200 Pessoas empregadas todos os UFs -cnae 2.0.csv")
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- toupper(CNAE_SC_2006_2018$`CNAE.2.0.Grupo`)
+CNAE_SC_2006_2018$CNAE.2.0.Grupo <- rm_accent(CNAE_SC_2006_2018$CNAE.2.0.Grupo)
+
+CNAE_SC <- left_join(CNAE_SC_2006_2018, CNAES_GERAL %>% select(05, 06, 11, 12, 13, 14), by = c("CNAE.2.0.Grupo" = "DESCRICAO_GRUPO")) %>% distinct()
+# CNAE_SC <- CNAE_SC %>% 
+#   filter(IT..OCDE != "")
+
+x2018 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2018) %>% 
+  mutate(ANO = "2018") 
+colnames(x2018) <- c("ESTADO", "GRUPO_CNAE","CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2017 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2017) %>% 
+  mutate(ANO = "2017") 
+colnames(x2017) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2016 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2016) %>% 
+  mutate(ANO = "2016") 
+colnames(x2016) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2015 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2015) %>% 
+  mutate(ANO = "2015") 
+colnames(x2015) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2014 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2014) %>% 
+  mutate(ANO = "2014") 
+colnames(x2014) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2013 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2013) %>% 
+  mutate(ANO = "2013") 
+colnames(x2013) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2012 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2012) %>% 
+  mutate(ANO = "2012") 
+colnames(x2012) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+# x2011 <- CNAE_SC %>% 
+#   select(01, 02, IT..OCDE, X2011) %>% 
+#   mutate(ANO = "2011") 
+# colnames(x2011) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2010 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2010) %>% 
+  mutate(ANO = "2010") 
+colnames(x2010) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2009 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2009) %>% 
+  mutate(ANO = "2009") 
+colnames(x2009) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2008 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2008) %>% 
+  mutate(ANO = "2008") 
+colnames(x2008) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+x2007 <- CNAE_SC %>% 
+  select(01, 02, IT..OCDE, X2007) %>% 
+  mutate(ANO = "2007") 
+colnames(x2007) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+# x2006 <- CNAE_SC %>% 
+#   select(01, 02, IT..OCDE, X2006) %>% 
+#   mutate(ANO = "2006") 
+# colnames(x2006) <- c("ESTADO", "GRUPO_CNAE", "CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_SC_N <- bind_rows(x2007,x2008,x2009,x2010,x2012,x2013,x2014,x2015,x2016,x2017,x2018) 
+write.csv2(CNAE_SC_N,"./Dados/RAIS - Pessoas Empregadas/200 Pessoas empregadas SC - 2007-2018 - CNAE2.0_organizado.csv" )
+
+
+teste_br <- CNAE_SC_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO,CLASS_OCDE,ANO,total)
+
+write.csv2(teste_br, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/200 contagem_pessoas empregadas_BR-UF_CLASSOCDE_2007-2018.csv", 
+           row.names = F)
+
+```
+
+
+```{r}
+#cnae 2.0: pessoas empregadas todas as ufs
+CNAES_GERAL <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/ID_BO_Descrição_CNAE_20190822.csv", colClasses = "character", encoding = "UTF-8")
+colnames(CNAES_GERAL)[1] <- "CNAE_COD"
+
+CNAES_GERAL$DESCRICAO_GRUPO <- rm_accent(CNAES_GERAL$DESCRICAO_GRUPO)
+CNAES_GERAL$DESCRICAO_GRUPO <- toupper(CNAES_GERAL$DESCRICAO_GRUPO)
+
+CNAE_SC_2006_2018 <- read.csv2("C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/400 Pessoas empregadas funções pesquisa.csv")
+CNAE_SC_2006_2018$CNAE <- toupper(CNAE_SC_2006_2018$CNAE)
+CNAE_SC_2006_2018$CNAE <- rm_accent(CNAE_SC_2006_2018$CNAE)
+
+CNAE_SC <- left_join(CNAE_SC_2006_2018, CNAES_GERAL %>% select(05, 06, 11, 12, 13, 14), by = c("CNAE" = "DESCRICAO_GRUPO")) %>% distinct()
+CNAE_SC <- CNAE_SC %>%
+  filter(IT..OCDE != "")
+
+x2018 <- CNAE_SC %>% 
+  select(01:02, IT..OCDE, X2018) %>% 
+  mutate(ANO = "2018") 
+colnames(x2018) <- c("ESTADO", "GRUPO_CNAE","CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+x2006 <- CNAE_SC %>%
+  select(01:02, IT..OCDE, X2006) %>%
+  mutate(ANO = "2006")
+colnames(x2006) <- c("ESTADO", "GRUPO_CNAE","CLASS_OCDE","TOTAL_EMPRESAS", "ANO")
+
+CNAE_SC_N <- bind_rows(x2006,x2018) 
+write.csv2(CNAE_SC_N,"./Dados/RAIS - Pessoas Empregadas/400 Pessoas empregadas atividades ped - 2006-2018 - CNAE2.0_organizado.csv" )
+
+
+teste_br <- CNAE_SC_N %>% 
+  group_by(ESTADO, CLASS_OCDE, ANO) %>% 
+  mutate(total = sum(TOTAL_EMPRESAS)) %>% 
+  distinct(ESTADO, CLASS_OCDE,ANO,total)
+
+write.csv2(teste_br, "C://Users/anaax/OneDrive/Documentos/UFSC/00 TCC/Dados/RAIS - Pessoas Empregadas/400 contagem_pessoas empregadas ped_BR-UF_CLASSOCDE_2006-2018.csv", 
+           row.names = F)
+
+```
+
+
+```{r}
+library(rgdal)
+library(dplyr)
+library(leaflet)
+library(sf)
+
+shp <- rgdal::readOGR("Mapa2\\.", "BRMIE250GC_SIR", stringsAsFactors=FALSE, encoding = "windows-1252")
+shp[[1]] <- gsub("ÃƒÆ’","Ã", as.character(shp[[1]]))
+shp[[1]] <- gsub("Ãƒâ€œ","Ó", as.character(shp[[1]]))
+shp[[1]] <- gsub("Ãƒ","Í", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€¡","Ç", as.character(shp[[1]]))
+shp[[1]] <- gsub("ÍÅ¡","Ú", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€°","É", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€\u009d","Ô", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€š","Â", as.character(shp[[1]]))
+# shp[[1]] <- gsub("Íâ€¢","Õ", as.character(shp[[1]]))
+shp[[1]] <- toupper(iconv(shp[[1]] , to = "ASCII//TRANSLIT"))
+shp[[1]][[96]] <- "CASCAVEL-PR"
+shp[[1]][[545]] <- "CASCAVEL-CE"
+shp[[1]][[111]] <- "LITORAL SUL-PB"
+shp[[1]][[146]] <- "LITORAL SUL-RN"
+shp[[1]][[325]] <- "GURUPI-MA"
+shp[[1]][[426]] <- "GURUPI-TO"
+shp[[1]][[379]] <- "RIO NEGRO-PR"
+shp[[1]][[521]] <- "RIO NEGRO-AM"
+DADOS <- read.csv2("./Dados/microregioes - pessoas empregadas.csv")
+DADOS$`Microrreg_v2` <- toupper(iconv(DADOS$`Microrreg_v2` , to = "ASCII//TRANSLIT"))
+DADOS <- DADOS %>% filter(`Microrreg_v2` != "TOTAL" & !UF %in% c("BRASIL")) %>% group_by(UF, `Microrreg_v2`) %>% 
+  mutate(ano2006 = sum(X2006), ano2012 = sum(X2012), ano2018 = sum(X2018)) %>% 
+  select(UF, `Microrreg_v2`, ano2006, ano2012, ano2018) %>% 
+  distinct()
+
+teste <- DADOS %>% filter(!`Microrreg_v2` %in% shp[[1]])
+teste2 <- shp[[1]]
+teste2 <- as.data.frame(teste2)
+teste2 <- filter(teste2,!teste2 %in% DADOS$`Microrreg_v2`)
+
+#testes ok
+
+DADOS <- c("0 - 500", "500 - 1000", "1000 - 1500", "30 A 34 ANOS", "35 A 39 ANOS", "40 A 44 ANOS", "45 A 49 ANOS", "50 A 54 ANOS", "55 A 59 ANOS", "60 A 64 ANOS", "65 A 69 ANOS", "ACIMA DE 70 ANOS")
+
+breaks_DADOS <- c(0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, Inf)
+
+CFL_dados$IDADE_FAIXA <- cut(CFL_dados$IDADE, breaks_idade, faixas_idade, include.lowest = T)
+
+
+###
+brasileiropg <- merge(shp, DADOS, by.x = "NM_MICRO", by.y = "Microrreg_v2")
+
+# pal <- colorBin("Greens",domain = NULL,n=150) #cores do mapa
+binpal <- colorBin("Greens", brasileiropg$ano2018, bins = 10)
+
+map_br_2006 <- leaflet(data = brasileiropg) %>%
+        addProviderTiles("CartoDB.Positron") %>%
+        addPolygons(data = brasileiropg,
+                    fillColor = binpal(brasileiropg$ano2006),
+                    fillOpacity = 0.8,
+                    dashArray = "3",
+                    weight = 0.5,
+                    color = 'black',
+                    opacity = 1,
+                    popup = ~paste(sep = " ",
+                                   "<strong>Microrregião: </strong>",brasileiropg$Microrreg_v2,"<br>",
+                      "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2006),
+             group = "2006") %>%
+        addLegend("bottomright", pal = binpal, values = ~brasileiropg$ano2006,
+                  title = "Pessoas empregadas em T-KIBS",
+                  opacity = 1)
+
+rm(brasileiropg,shp,DADOS)
+mapview::mapshot(map_br_2006, "./map_Brasil_2006.html")
+
+
+# pal <- colorBin("Greens",domain = NULL,n=150) #cores do mapa
+# binpal <- colorQuantile(heat.colors(20), brasileiropg$ano2018, n = 100, reverse = T)
+# 
+# map_br_2018 <- leaflet(data = brasileiropg) %>%
+#         addProviderTiles("CartoDB.Positron") %>%
+#         addPolygons(data = brasileiropg,
+#                     fillColor = binpal(brasileiropg$ano2018),
+#                     fillOpacity = 0.8,
+#                     dashArray = "3",
+#                     weight = 0.5,
+#                     color = 'black',
+#                     opacity = 1,
+#                     popup = ~paste(sep = " ",
+#                                    "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+#                       "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2018),
+#              group = "2018") %>%
+#         # addPolygons(fillColor = ~pal(brasileiropg$ano2008), 
+#         #             fillOpacity = 0.8, 
+#         #             color = "#BDBDC3", 
+#         #             weight = 1, 
+#         #             popup = ~paste(sep = " ",
+#         #                            "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+#         #               "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2012),
+#         #      group = "2012") %>%
+#         #   addPolygons(fillColor = ~pal(brasileiropg$ano2008), 
+#         #             fillOpacity = 0.8, 
+#         #             color = "#BDBDC3", 
+#         #             weight = 1, 
+#         #             popup = ~paste(sep = " ",
+#         #                            "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+#         #               "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2018),
+#         #      group = "2018") %>%
+#         addLegend("bottomright", pal = binpal, values = ~brasileiropg$ano2018,
+#                   title = "Pessoas empregadas em T-KIBS",
+#                   opacity = 1) #%>%
+#   # addLayersControl(overlayGroups = c("2008", "2012", "2018"),
+#   #                   options = layersControlOptions(collapsed = F))
+# rm(brasileiropg,shp,DADOS)
+# mapview::mapshot(map_br_2018, "./map_Brasil_2018.html")
+```
+
+
+```{r}
+library(rgdal)
+library(dplyr)
+library(leaflet)
+library(sf)
+
+shp <- rgdal::readOGR("Mapa\\.", "BRMEE250GC_SIR", stringsAsFactors=FALSE, encoding = "windows-1252")
+shp[[1]] <- gsub("ÃƒÆ’","Ã", as.character(shp[[1]]))
+shp[[1]] <- gsub("Ãƒâ€œ","Ó", as.character(shp[[1]]))
+shp[[1]] <- gsub("Ãƒ","Í", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€¡","Ç", as.character(shp[[1]]))
+shp[[1]] <- gsub("ÍÅ¡","Ú", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€°","É", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€\u009d","Ô", as.character(shp[[1]]))
+shp[[1]] <- gsub("Íâ€š","Â", as.character(shp[[1]]))
+# shp[[1]] <- gsub("Íâ€¢","Õ", as.character(shp[[1]]))
+shp[[1]] <- toupper(iconv(shp[[1]] , to = "ASCII//TRANSLIT"))
+shp[[1]][[96]] <- "CASCAVEL-PR"
+shp[[1]][[545]] <- "CASCAVEL-CE"
+shp[[1]][[111]] <- "LITORAL SUL-PB"
+shp[[1]][[146]] <- "LITORAL SUL-RN"
+shp[[1]][[325]] <- "GURUPI-MA"
+shp[[1]][[426]] <- "GURUPI-TO"
+shp[[1]][[379]] <- "RIO NEGRO-PR"
+shp[[1]][[521]] <- "RIO NEGRO-AM"
+DADOS <- read.csv2("./Dados/microregioes - pessoas empregadas.csv")
+DADOS$`Microrreg_v2` <- toupper(iconv(DADOS$`Microrreg_v2` , to = "ASCII//TRANSLIT"))
+DADOS <- DADOS %>% filter(`Microrreg_v2` != "TOTAL" & !UF %in% c("BRASIL")) %>% group_by(UF, `Microrreg_v2`) %>% 
+  mutate(ano2006 = sum(X2006), ano2012 = sum(X2012), ano2018 = sum(X2018)) %>% 
+  select(UF, `Microrreg_v2`, ano2006, ano2012, ano2018) %>% 
+  distinct()
+
+teste <- DADOS %>% filter(!`Microrreg_v2` %in% shp[[1]])
+teste2 <- shp[[1]]
+teste2 <- as.data.frame(teste2)
+teste2 <- filter(teste2,!teste2 %in% DADOS$`Microrreg_v2`)
+
+#testes ok
+
+DADOS <- c("0 - 500", "500 - 1000", "1000 - 1500", "30 A 34 ANOS", "35 A 39 ANOS", "40 A 44 ANOS", "45 A 49 ANOS", "50 A 54 ANOS", "55 A 59 ANOS", "60 A 64 ANOS", "65 A 69 ANOS", "ACIMA DE 70 ANOS")
+
+breaks_DADOS <- c(0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, Inf)
+
+CFL_dados$IDADE_FAIXA <- cut(CFL_dados$IDADE, breaks_idade, faixas_idade, include.lowest = T)
+
+
+###
+brasileiropg <- merge(shp, DADOS, by.x = "NM_MICRO", by.y = "Microrreg_v2")
+
+# pal <- colorBin("Greens",domain = NULL,n=150) #cores do mapa
+binpal <- colorBin("Greens", brasileiropg$ano2018, bins = 10)
+
+map_br_2006 <- leaflet(data = brasileiropg) %>%
+        addProviderTiles("CartoDB.Positron") %>%
+        addPolygons(data = brasileiropg,
+                    fillColor = binpal(brasileiropg$ano2006),
+                    fillOpacity = 0.8,
+                    dashArray = "3",
+                    weight = 0.5,
+                    color = 'black',
+                    opacity = 1,
+                    popup = ~paste(sep = " ",
+                                   "<strong>Microrregião: </strong>",brasileiropg$Microrreg_v2,"<br>",
+                      "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2006),
+             group = "2006") %>%
+        addLegend("bottomright", pal = binpal, values = ~brasileiropg$ano2006,
+                  title = "Pessoas empregadas em T-KIBS",
+                  opacity = 1)
+
+rm(brasileiropg,shp,DADOS)
+mapview::mapshot(map_br_2006, "./map_Brasil_2006.html")
+
+
+# pal <- colorBin("Greens",domain = NULL,n=150) #cores do mapa
+# binpal <- colorQuantile(heat.colors(20), brasileiropg$ano2018, n = 100, reverse = T)
+# 
+# map_br_2018 <- leaflet(data = brasileiropg) %>%
+#         addProviderTiles("CartoDB.Positron") %>%
+#         addPolygons(data = brasileiropg,
+#                     fillColor = binpal(brasileiropg$ano2018),
+#                     fillOpacity = 0.8,
+#                     dashArray = "3",
+#                     weight = 0.5,
+#                     color = 'black',
+#                     opacity = 1,
+#                     popup = ~paste(sep = " ",
+#                                    "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+#                       "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2018),
+#              group = "2018") %>%
+#         # addPolygons(fillColor = ~pal(brasileiropg$ano2008), 
+#         #             fillOpacity = 0.8, 
+#         #             color = "#BDBDC3", 
+#         #             weight = 1, 
+#         #             popup = ~paste(sep = " ",
+#         #                            "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+#         #               "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2012),
+#         #      group = "2012") %>%
+#         #   addPolygons(fillColor = ~pal(brasileiropg$ano2008), 
+#         #             fillOpacity = 0.8, 
+#         #             color = "#BDBDC3", 
+#         #             weight = 1, 
+#         #             popup = ~paste(sep = " ",
+#         #                            "<strong>Mesoregião: </strong>",brasileiropg$mesoregiao,"<br>",
+#         #               "<br><strong>Pessoas empregadas: </strong>", brasileiropg$ano2018),
+#         #      group = "2018") %>%
+#         addLegend("bottomright", pal = binpal, values = ~brasileiropg$ano2018,
+#                   title = "Pessoas empregadas em T-KIBS",
+#                   opacity = 1) #%>%
+#   # addLayersControl(overlayGroups = c("2008", "2012", "2018"),
+#   #                   options = layersControlOptions(collapsed = F))
+# rm(brasileiropg,shp,DADOS)
+# mapview::mapshot(map_br_2018, "./map_Brasil_2018.html")
+```
