@@ -29,6 +29,45 @@ library(htmltools)
 options(scipen=999)
 options(browser='false')
 
+# Plot Margins
+
+m <- list(l=100, r=100, t=100, b=100)
+
+custom_layout <- function(pltly_obj,title,subtitle,source) {
+  pltly_obj <- pltly_obj %>% layout(title=list(text=paste(title),
+                                   font=list(family="Raleway", color="#000000",size=16),
+                                   xref='paper',
+                                   yref='paper',
+                                   x=0,
+                                   y=1.1,
+                                   xanchor='left', 
+                                   yanchor='top'),
+                                   margin=m,
+                                   autosize = F,
+                                   annotations = list(list(x = 0, 
+                                                      y = 1.1,
+                                                      text = subtitle,
+                                                      showarrow = F,
+                                                      xref='paper',
+                                                      yref='paper', 
+                                                      xanchor='left', 
+                                                      yanchor='top', 
+                                                      xshift=0, 
+                                                      yshift=-0.8,
+                                                      font=list(size=14, color="#000000", family="Raleway")),
+                                   list(x = 0.75, 
+                                        y = -0.16,
+                                        text = source, 
+                                        showarrow = F,
+                                        xref='paper',
+                                        yref='paper', 
+                                        xanchor='left', 
+                                        yanchor='auto', 
+                                        xshift=0, 
+                                        yshift=0,
+                                        font=list(size=12, color="grey", family="Raleway"))))
+}
+  
 # Load Chart Studio API
 Sys.setenv("plotly_username"=Sys.getenv("PLOTLY_USERNAME"))
 Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
@@ -145,15 +184,6 @@ make_plot_appear <- function(i, maxi=N){
          title="Casos de COVID-19 confirmados em Santa Catarina",
          subtitle=paste("Dados atualizados em: ",format(Sys.time(), "%d/%m/%Y")),
          caption="Dados disponibilizados pelas Secretarias de Saúde Estaduais.\n(https://brasil.io/dataset/covid19/caso)")
-  
-  # g.progress<-
-  #   ggplot(data=df_tween_appear_SC, aes(x=date,y=new_cases,3))+
-  #   geom_bar(data= .%>% filter(.frame==i, .age> -3.5), color="#27408b",stat="identity")+
-  #   theme_minimal()+
-  #   # scale_y_continuous()+
-  #   theme(plot.title=element_text(size=8,hjust=0.1))+
-  #   labs(y="Casos", x="Data",
-  #        title="Casos confirmados por dia")
     plot_grid(g.plot,rel_heights=c(5,1),ncol=1)
 }
 
@@ -267,25 +297,30 @@ data <- data %>%
 p_lin <- data %>% 
   filter(confirmed > 10) %>% 
   ggplot(aes(x=days_from_10th, 
-             y=confirmed,group=city, 
+             y=confirmed,
+             group=city, 
              color=city,
+             label=state,
              text = paste0("Cidade: ", city,"<br>",
                            "Casos Confirmados: ", confirmed, "<br>",
                            "Óbitos Confirmados:", deaths, "<br>",
                            "Dias desde o 10º caso: ",days_from_10th))
          ) + 
-  geom_line(size=0.8)+
-  # theme(legend.position="bottom") +
-  # theme(legend.title=element_blank())+
-  labs(title = paste("Evolução por cidade (linear) - ",format(Sys.time(), "%d/%m/%Y")), 
-       caption = "Em escala logaritmica. Apenas estados com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://raw.githubusercontent.com/wcota/covid19br/master/cases-brazil-states.csv") + 
+  geom_line(size=0.9)+
   xlab("Dias desde 10º caso") + 
   ylab("Casos confirmados")+ 
   theme_minimal()+ 
   theme(legend.position="bottom") +
   scale_color_discrete(name="")
 
-p_lin %>% ggplotly(tooltip = c("text")) 
+p_casos_cidade_sc <- p_lin %>% ggplotly(tooltip = c("text")) %>% custom_layout(paste("<b>Evolução por cidade</b>"),
+                                                            "Em escala linear",
+                                                           paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y")))
+)
+p_casos_cidade_sc
+# Upload to chart studio
+if (prod == TRUE) {api_create(p_casos_cidade_sc, filename = "covid-sc-citylin", fileopt = "overwrite")}
+
 
 x_seq <-tibble(days_from_10th = seq(0,max(as.integer(data$days_from_10th),na.rm=T)+2,1)) %>% 
   mutate(
@@ -299,15 +334,24 @@ p_log <- data %>%
   ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(aes(color=city, group=city,label=city,text = paste0("Cidade: ", city,"<br>",
                                                                                                              "Casos Confirmados: ", confirmed, "<br>",
                                                                                                              "Óbitos Confirmados:", deaths, "<br>",
-                                                                                                             "Dias desde o 10º caso: ",days_from_10th)),size=0.8) +
+                                                                                                             "Dias desde o 10º caso: ",days_from_10th)),size=0.9) +
   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
   geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey") +
   geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = "grey") +
-  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por cidade de SC (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas cidades com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+theme_minimal() + annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)+ 
+  scale_y_continuous(trans="pseudo_log") + 
+  xlab("Dias desde 10º caso") + ylab("Casos confirmados")+theme_minimal() + annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)+ 
   theme(legend.position="bottom") +
   scale_color_discrete(name="")
 
-p_log %>% ggplotly(tooltip = c("text"))
+p_city_log <- p_log %>% ggplotly(tooltip = c("text")) %>% custom_layout(paste("<b>Evolução por cidade</b>"),
+                                                            "Em escala logarítmica",
+                                                           paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))))
+
+p_city_log
+
+# Upload to chart studio
+if (prod == TRUE) {api_create(p_city_log, filename = "covid-sc-citylog", fileopt = "overwrite")}
+
 ```
 
 
@@ -354,15 +398,22 @@ p_lin <- shp_mr %>%
              group=nome,
              text = paste0("Microrregião: ", nome,"<br>","Casos Confirmados: ", confirmed_mr, "<br>","Óbitos Confirmados:", deaths_mr, "<br>",
                                                                                                              "Dias desde o 10º caso: ",days_from_10th))) + 
-  geom_line(size=0.8)+ 
-  labs(title = paste("Evolução por microrregião (linear) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas microrregiões com mais de 10 casos.Os dados são atualizados diariamente.\n Fontehttps://brasil.io/api/dataset/covid19/caso/") + 
+  geom_line(size=0.9)+ 
   xlab("Dias desde 10º caso") + 
   ylab("Casos confirmados")+ 
   theme_minimal()+ 
   theme(legend.position="bottom") +
   scale_color_discrete(name="")
 
-p_lin %>% ggplotly(tooltip = c("text"))
+p_mr_lin <- p_lin %>% ggplotly(tooltip = c("text"))%>% custom_layout(paste("<b>Evolução por microrregião</b>"),
+                                                            "Em escala linear",
+                                                           paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))))
+
+p_mr_lin
+
+# Upload to chart studio
+if (prod == TRUE) {api_create(p_mr_lin, filename = "covid-sc-mrlin", fileopt = "overwrite")}
+
 
 x_seq <-tibble(days_from_10th = seq(0,max(as.integer(shp_mr$days_from_10th),na.rm=T)+2,1)) %>% 
   mutate(
@@ -375,16 +426,25 @@ p_log <- shp_mr %>%
   filter(confirmed_mr > 10) %>% 
   ggplot(aes(x=days_from_10th, y=confirmed_mr)) + geom_line(aes(color=nome,label=nome,group=nome,
              text = paste0("Microrregião: ", nome,"<br>","Casos Confirmados: ", confirmed_mr, "<br>","Óbitos Confirmados:", deaths_mr, "<br>",
-                                                                                                             "Dias desde o 10º caso: ",days_from_10th)),size=0.8) +
+                                                                                                             "Dias desde o 10º caso: ",days_from_10th)),size=0.9) +
   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
   geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey") +
   geom_line(aes(x=days_from_10th,y=y_log_10d),data=x_seq, color = "grey") +
-  scale_y_continuous(trans="pseudo_log") + labs(title = paste("Evolução por microrregião de SC (em log) - ",format(Sys.time(), "%d/%m/%Y")), caption = "Em escala logaritmica. Apenas microrregiões com mais de 10 casos.Os dados são atualizados diariamente.\n Fonte:https://brasil.io/api/dataset/covid19/caso/") + xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal() + 
+  scale_y_continuous(trans="pseudo_log") + 
+  xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal() + 
   annotate("text", x = c(max(x_seq$days_from_10th),max(x_seq$days_from_10th),max(x_seq$days_from_10th)), y = c(max(x_seq$y_log_10d),max(x_seq$y_log_5d),max(x_seq$y_log_2d)), label = c("10 dias para \n duplicar","5 dias para \n duplicar","2 dias para \n duplicar"), size=3, color = "grey",vjust=-1)+ 
   theme(legend.position="bottom") +
   scale_color_discrete(name="")
 
-p_log %>% ggplotly(tooltip = c("text"))
+p_mr_log <- p_log %>% ggplotly(tooltip = c("text"))%>% custom_layout(paste("<b>Evolução por microrregião</b>"),
+                                                            "Em escala logarítmica",
+                                                           paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))))
+
+p_mr_log
+
+# Upload to chart studio
+if (prod == TRUE) {api_create(p_mr_log, filename = "covid-sc-mrlog", fileopt = "overwrite")}
+
 ```
 ## Códigos
 
