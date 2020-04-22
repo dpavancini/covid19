@@ -34,7 +34,7 @@ Sys.setenv("plotly_username"=Sys.getenv("PLOTLY_USERNAME"))
 Sys.setenv("plotly_api_key"=Sys.getenv("PLOTLY_API_KEY"))
 
 # If prod = T, publish plots online
-prod = F
+prod = T
 
 
 # Plot Margins
@@ -199,11 +199,7 @@ dados_rotulos <- dados_selecionados %>%
   arrange(desc(sum_cases)) %>% 
   slice(1)
 
-p <- dados_selecionados %>%  ggplot(aes(x=days_from_first, y=sum_cases, color=labels, linetype=labels,label=labels,
-             text = paste0("País: ", labels,"<br>",
-                           "Casos Confirmados: ", sum_cases, "<br>",
-                           "Óbitos Confirmados:", sum_deaths, "<br>",
-                           "Dias desde o 1º caso: ",days_from_first))) + 
+p <- dados_selecionados %>%  ggplot(aes(x=days_from_first, y=sum_cases, color=labels, linetype=labels,label=labels)) + 
   geom_line(size=1) + 
   geom_text(aes(x=days_from_first,y=sum_cases, label = labels,color = labels), data = dados_rotulos) +
   scale_y_log10() +
@@ -229,11 +225,8 @@ Se olharmos a partir do 100º caso, quando é possível ter uma ideia melhor de 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Create labels
 p <- dados_selecionados %>% 
-  ggplot(aes(x=days_from_100th, y=sum_cases, color=labels, linetype=labels,label=labels,
-             text = paste0("Local: ", labels,"<br>",
-                           "Casos Confirmados: ", sum_cases, "<br>",
-                           "Óbitos Confirmados:", sum_deaths, "<br>",
-                           "Dias desde o 100º caso: ",days_from_100th))) + geom_line()+ 
+  ggplot(aes(x=days_from_100th, y=sum_cases, color=labels, linetype=labels,label=labels
+            )) + geom_line()+ 
   geom_text(aes(x=days_from_100th,y=sum_cases, label = labels,color = labels), data = dados_rotulos) +
   scale_y_log10()  + theme_minimal() + xlab("Dias desde 100º caso") + ylab("Casos confirmados") +
   scale_color_manual(name="País",labels=labels, breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
@@ -290,10 +283,8 @@ dados_rotulos <- dados_selecionados_estat %>%
   slice(1) 
 
 p<- dados_selecionados_estat %>% 
-  ggplot(aes(x=days_from_100th, y=cases_per_1000, color=labels, linetype=labels, label=labels,
-             text = paste0("Local: ", labels,"<br>",
-                           "Casos por 100 habitantes: ", cases_per_1000, "<br>",
-                           "Dias desde o 100º caso: ",days_from_100th))) + geom_line()+ 
+  ggplot(aes(x=days_from_100th, y=cases_per_1000, color=labels, linetype=labels, label=labels
+             )) + geom_line()+ 
   geom_text(aes(x=days_from_100th,y=cases_per_1000, label = labels,color = labels), data = dados_rotulos) +
   xlim(0,80) +  xlab("Dias desde 100º caso") + ylab("Casos confirmados/1000 habitantes") +
   scale_color_manual(name="País",labels=labels,   breaks=breaks,values=c("red","#bdc2b0",'#cee588','#ff9872','#95b6cf','#455a64',"#f9d84e"))+
@@ -357,12 +348,12 @@ dados_rotulos <- casos_por_estado %>%
 
 p_lin <- casos_por_estado %>% 
   filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
-  ggplot(aes(x=days_from_10th, y=totalCases, color=state,linetype=state,label=state,
-             text = paste0("Local: ", state,"<br>",
-                           "Casos Confirmados: ", totalCases, "<br>",
-                           "Dias desde o 10º caso: ",days_from_10th))) + geom_line(size=1)+ 
+  ggplot(aes(x=days_from_10th, 
+             y=totalCases, 
+             color=state
+             )) + geom_line(size=1)+ 
   geom_text(aes(x=days_from_10th,y=totalCases, label = state,color = state), data = dados_rotulos) +
-  xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
+  xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal() + scale_color_discrete(name="")
 
 p_4 <- p_lin %>% ggplotly(tooltip = c("text")) %>% layout(title=paste("Evolução por estado (linear)"), 
                             annotations = list(x = 0.8, y = -0.05, text = paste0("Fonte: SES.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))), 
@@ -382,10 +373,7 @@ x_seq <-data_frame(days_from_10th = seq(0,max(as.integer(casos_por_estado$days_f
 
 p_log <-casos_por_estado %>% 
   filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
-  ggplot(aes(x=days_from_10th, y=totalCases)) + geom_line(aes(color=state,label=state,
-             text = paste0("Local: ", state,"<br>",
-                           "Casos Confirmados: ", totalCases, "<br>",
-                           "Dias desde o 10º caso: ",days_from_10th)))+ 
+  ggplot(aes(x=days_from_10th, y=totalCases)) + geom_line(aes(color=state,label=state))+ 
   geom_text(aes(x=days_from_10th,y=totalCases, label = state,color=state), data = dados_rotulos,show.legend = FALSE) +
   geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey", linetype=1) +
   geom_line(aes(x=days_from_10th,y=y_log_5d),data=x_seq, color = "grey", linetype=1) +
@@ -405,10 +393,8 @@ if (prod == TRUE) {api_create(p_5, filename = "covid-states-log-plot",fileopt = 
 
 p_lin_1000 <- casos_por_estado %>% 
   filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
-  ggplot(aes(x=days_from_10th, y=total_cases_pop, color=state,label=state,
-             text = paste0("Local: ", state,"<br>",
-                           "Casos Confirmados: ", totalCases, "<br>",
-                           "Dias desde o 10º caso: ",days_from_10th))) + geom_line()+ 
+  ggplot(aes(x=days_from_10th, y=total_cases_pop, color=state,label=state
+             )) + geom_line()+ 
   geom_text(aes(x=days_from_10th,y=total_cases_pop, label = state,color = state), data = dados_rotulos, show.legend = F) +
   xlab("Dias desde 10º caso") + ylab("Casos confirmados")+ theme_minimal()
 
@@ -432,17 +418,16 @@ x_seq <-data_frame(days_from_10th = seq(0,max(as.integer(casos_por_estado$days_f
     y_log_5d = 10 * 2^(1/5 * days_from_10th),                                                                                                   y_log_10d = 10 * 2^(1/10 * days_from_10th))    
 
 dados_rotulos <- casos_por_estado %>% 
-  group_by(state) %>% 
-  arrange(desc(totalCases)) %>% 
-  slice(1)
+   filter(totalCases > 10 & state != 'TOTAL') %>% 
+    group_by(state) %>% 
+    arrange(desc(totalCases)) %>% 
+    slice(1)
 
 
 p_log_sc <- casos_por_estado %>% 
   filter(totalCases > 10 & state != 'TOTAL' & date < Sys.Date()) %>% 
-  ggplot(aes(x=days_from_10th, y=totalCases,
-             text = paste0("Local: ", state,"<br>",
-                           "Casos Confirmados: ", totalCases, "<br>",
-                           "Dias desde o 10º caso: ",days_from_10th))) + 
+  ggplot(aes(x=days_from_10th, y=totalCases
+            )) + 
   geom_line(aes(group=state),size=1, color="darkgrey", data = . %>% filter(state != 'SC')) +
   geom_line(aes(group=state),size=1.1, color="#ff6a6a", data = . %>% filter(state == 'SC'))+
    geom_line(aes(x=days_from_10th,y=y_log_2d),data=x_seq, color = "grey") +
