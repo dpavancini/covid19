@@ -64,7 +64,7 @@ custom_layout <- function(pltly_obj,title,subtitle,source) {
                                                       yshift=-0.8,
                                                       font=list(size=14, color="#000000", family="Raleway")),
                                    list(x = 0.8, 
-                                        y = -0.05,
+                                        y = -0.16,
                                         text = source, 
                                         showarrow = F,
                                         xref='paper',
@@ -199,9 +199,8 @@ dados_rotulos <- dados_selecionados %>%
   arrange(desc(sum_cases)) %>% 
   slice(1)
 
-p <- dados_selecionados %>% 
-  ggplot(aes(x=days_from_first, y=sum_cases, color=labels, linetype=labels,label=labels,
-             text = paste0("Local: ", labels,"<br>",
+p <- dados_selecionados %>%  ggplot(aes(x=days_from_first, y=sum_cases, color=labels, linetype=labels,label=labels,
+             text = paste0("País: ", labels,"<br>",
                            "Casos Confirmados: ", sum_cases, "<br>",
                            "Óbitos Confirmados:", sum_deaths, "<br>",
                            "Dias desde o 1º caso: ",days_from_first))) + 
