@@ -1,1 +1,0 @@
-{"frames":[],"message":"Error in ggplot(data, aes(x = date, y = confirmed, group = city, colour = factor(city),  : \n  não foi possível encontrar a função \"ggplot\"\n"}

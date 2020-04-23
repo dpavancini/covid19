@@ -1,4 +1,0 @@
-"0","df_tween_appear_SC <- tween_appear(plot_data_tween_sc, time='day', nframes = nrow(data_SC)*3)
-"
-"2","
-"

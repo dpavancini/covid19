@@ -82,66 +82,7 @@ custom_layout <- function(pltly_obj,title,subtitle,source) {
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Please note that this script updates every day automatically using the time of your computer. Hence, it might show an error message if you try to download the file before we have updated it.
 
-#create the URL where the dataset is stored with automatic updates every day
-
-readUrl <- function() {
-    out <- tryCatch(
-        {
-            # Just to highlight: if you want to use more than one 
-            # R expression in the "try" part then you'll have to 
-            # use curly brackets.
-            # 'tryCatch()' will return the last evaluated expression 
-            # in case the "try" part was completed successfully
-
-            message("Obtendo dados mais recentes da ECDC")
-
-            url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(Sys.Date()), ".xlsx", sep = "")
-
-            #download the dataset from the website to a local temporary file
-            GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
-            data <- read_excel(tf)
-            # The return value of `readLines()` is the actual value 
-            # that will be returned in case there is no condition 
-            # (e.g. warning or error). 
-            # You don't need to state the return value via `return()` as code 
-            # in the "try" part is not wrapped insided a function (unlike that
-            # for the condition handlers for warnings and error below)
-            
-        },
-        error=function(cond) {
-            message("Arquivo ainda não atualizado:")
-            message("Utilizando dados do dia anterior")
-            # Choose a return value in case of error
-             url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(Sys.Date() - 1), ".xlsx", sep = "")
-
-            #download the dataset from the website to a local temporary file
-            tf <- tempfile(fileext = ".xlsx") 
-            GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf))
-            data <- read_excel(tf)
-            return(data)
-            
-        },
-        warning=function(cond) {
-            message("URL caused a warning:")
-            message("Here's the original warning message:")
-            message(cond)
-            # Choose a return value in case of warning
-            return(NULL)
-        },
-        finally={
-        # NOTE:
-        # Here goes everything that should be executed at the end,
-        # regardless of success or error.
-        # If you want more than one expression to be executed, then you 
-        # need to wrap them in curly brackets ({...}); otherwise you could
-        # just have written 'finally=<expression>' 
-        }
-    )    
-    return(out)
-}
-
-data <- readUrl()
-
+data <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM", stringsAsFactors = F)
 
 data_clean <- data %>% select(dateRep = dateRep,
                         day = day,
@@ -152,7 +93,8 @@ data_clean <- data %>% select(dateRep = dateRep,
                         countriesAndTerritories = countriesAndTerritories,
                         geoId =  geoId,
                         countryterritoryCode = countryterritoryCode,
-                        popData2018 = popData2018)
+                        popData2018 = popData2018) %>% 
+  mutate(dateRep = as.Date(dateRep, format= "%d/%m/%Y"))
 # Prepare data
 
 dados_preparados_d0 <- data_clean %>% 
@@ -161,7 +103,7 @@ dados_preparados_d0 <- data_clean %>%
   group_by(geoId) %>% 
   mutate(sum_cases = cumsum(cases),
          sum_deaths = cumsum(deaths),
-         days_from_first = as.Date(dateRep, format= "%Y-%m-%d") - as.Date(min(dateRep), format= "%Y-%m-%d"),
+         days_from_first = as.Date(dateRep, format= "%d/%m/%Y") - as.Date(min(dateRep), format= "%d/%m/%Y"),
          g_cases = ((cases- lag(cases))/lag(cases))*100,
          g_deaths = ((deaths-lag(deaths))/lag(deaths))*100) %>% 
   select(dateRep,geoId,sum_cases,sum_deaths, days_from_first,g_cases,g_deaths)
@@ -170,7 +112,7 @@ dados_preparados_d100 <- dados_preparados_d0 %>%
   filter(sum_cases > 100 ) %>% 
   arrange(dateRep,geoId) %>%
   group_by(geoId) %>% 
-  mutate(days_from_100th = as.Date(dateRep, format= "%Y-%m-%d") - as.Date(min(dateRep), format= "%Y-%m-%d")) %>% 
+  mutate(days_from_100th = as.Date(dateRep, format=  "%d/%m/%Y") - as.Date(min(dateRep), format=  "%d/%m/%Y")) %>% 
   select(dateRep,geoId,days_from_100th)
 
 dados_completos <- data_clean %>% 
@@ -199,7 +141,7 @@ dados_rotulos <- dados_selecionados %>%
   arrange(desc(sum_cases)) %>% 
   slice(1)
 
-p <- dados_selecionados %>%  ggplot(aes(x=days_from_first, y=sum_cases, color=labels, linetype=labels,label=labels)) + 
+p <- dados_selecionados %>%  ggplot(aes(x=days_from_first, y=sum_cases,linetype=labels, color=labels,label=labels)) + 
   geom_line(size=1) + 
   geom_text(aes(x=days_from_first,y=sum_cases, label = labels,color = labels), data = dados_rotulos) +
   scale_y_log10() +
