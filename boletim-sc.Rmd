@@ -110,9 +110,11 @@ read_CityDataCovid <- function() {
       city_data <- out %>% filter(city_ibge_code == x$city_ibge_code[i]) %>% arrange(as.Date(date))
       date <- city_data %>% select(date) %>% distinct()
       city_data$new_cases[1] <- city_data$confirmed[1]
+      city_data$new_deaths[1] <- city_data$deaths[1]
       if(nrow(city_data) > 1){
         for (k in 2:nrow(city_data)) {
           city_data$new_cases[k] <- city_data$confirmed[k] - city_data$confirmed[k-1]
+          city_data$new_deaths[k] <- city_data$deaths[k] - city_data$deaths[k-1]
         }
       }
       new_cases <- bind_rows(new_cases, city_data)
@@ -126,7 +128,6 @@ read_CityDataCovid <- function() {
 # get data
 data <- read_CityDataCovid()
 data$date <- as.Date(data$date)
-data$new_cases <- rep(NA, nrow(data))
 data_SC_state <- data %>% filter(state == "SC"  & place_type == "state")%>% arrange(date) %>% mutate(day=1+(row_number()-1)*7,ease="linear") 
 data <- data %>% filter(state == "SC"  & place_type == "city", !is.na(city_ibge_code), confirmed >0)
 
@@ -262,7 +263,7 @@ map_100k <- leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabi
                   values = ~confirmed_per_100k_inhabitants, 
                   opacity = 0.8)
 
-
+map_100k
 htmlwidgets::saveWidget(map_100k,"map_100k.html")
 ```
 
@@ -446,6 +447,94 @@ p_mr_log
 if (prod == TRUE) {api_create(p_mr_log, filename = "covid-sc-mrlog", fileopt = "overwrite")}
 
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE,out.width='100%', fig.show='hold', fig.align='center'}
+
+
+deaths_d0 <- data_SC_state  %>% 
+  filter(deaths > 0 ) %>% 
+  arrange(date) %>%
+  mutate(days_from_first = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d"),
+         g_new_cases = ((deaths- lag(deaths))/lag(deaths))*100,
+         g_total_cases = ((deaths- lag(deaths))/lag(deaths))*100
+        ) %>% 
+  select(date,days_from_first,g_new_cases,g_total_cases)
+
+deaths_d10 <- data_SC_state  %>% 
+  filter(deaths > 10 ) %>% 
+  arrange(date) %>%
+  mutate(days_from_10th = as.Date(date, format= "%Y-%m-%d") - as.Date(min(date), format= "%Y-%m-%d")
+        ) %>% 
+  select(date,days_from_10th)
+
+data_SC_state <- data_SC_state %>% 
+  left_join(deaths_d0, by = c("date"= "date")) %>% 
+  left_join(deaths_d10, by = c("date"= "date")) 
+
+
+p_obt <- ggplot(data_SC_state,aes(x = date)) +
+  geom_line(aes(y = deaths, 
+                text = deaths, 
+                colour = "Óbitos <br>Acumulados")) + 
+  geom_bar(aes(y = new_deaths, colour = "Novos Óbitos <br>Confirmados", 
+               text = new_deaths), stat = "identity")+
+  theme_minimal() +
+  theme(legend.title = element_text(color = "black", size = 9),
+                legend.text = element_text(color = "black", size = 8))+
+  labs(y = "Número de Óbitos",
+                x = "Data",
+                colour = "Parâmetro")
+
+p_obt_lin <- p_obt %>% ggplotly(dynamicTicks = TRUE, tooltip = c("text"))%>% custom_layout(paste("<b>Evolução de número de óbitos</b>"),
+                                                            "Em escala linear",
+                                                           paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))))
+
+p_obt_lin
+
+# Upload to chart studio
+if (prod == TRUE) {api_create(p_obt_lin, filename = "covid-sc-deaths", fileopt = "overwrite")}
+
+
+```
+
+```{r,, echo=FALSE, warning=FALSE, message=FALSE,out.width='100%', fig.show='hold', fig.align='center'}
+#the rates is taken from https://www.worldometers.info/coronavirus/#countries
+x_seq <- data_SC_state %>% 
+  mutate(
+    y_est_10 = deaths/0.010, # estimativa com taxa de mortalidade autraliana (0.0124)
+    y_est_15 = deaths/0.015, # estimativa com taxa de mortalidade chilena (0.0142)
+    y_est_40 = deaths/0.040, # estimativa com taxa de mortalidade alemã (0.0378)
+    y_est_20 = deaths/0.020, # estimativa com taxa de mortalidade koréia do sul (0.0226)
+    y_est_08 = deaths/0.008 # estimativa com taxa de mortalidade basileria (0.0675)
+     )
+
+p_log <- x_seq %>% 
+  ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(size=0.9) +
+  geom_line(size=0.9) +
+  geom_line(aes(x=days_from_10th,y=y_est_40),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_est_20),data=x_seq, color = "grey") +
+  geom_line(aes(x=days_from_10th,y=y_est_15),data=x_seq, color = "grey")  +
+  geom_line(aes(x=days_from_10th,y=y_est_10),data=x_seq, color = "grey")  +
+  xlab("Dias desde 10º caso") + ylab("Número de casos")+ theme_minimal() + 
+  annotate("text", x = c(last(x_seq$days_from_10th),last(x_seq$days_from_10th),last(x_seq$days_from_10th),last(x_seq$days_from_10th)), 
+           y = c(max(x_seq$y_est_40),max(x_seq$y_est_20),max(x_seq$y_est_15),max(x_seq$y_est_10)), 
+           label = c("4%","2%","1,5%","1%"), 
+           size=3, color = "grey",vjust=-1) + 
+  theme(legend.position="bottom") +
+  scale_color_discrete(name="")
+  
+estimativa_p <- p_log %>% ggplotly(tooltip = NULL) %>% 
+  custom_layout(paste("<b>Estimativas da quantidade provável de casos em SC, com base na taxa de óbitos.</b>"),"Em escala linear",
+                paste0(" \n Atualizado:",format(Sys.time(), "%d/%m/%Y")))
+
+estimativa_p
+
+# Upload to chart studio
+if (prod == TRUE) {api_create(estimativa_p, filename = "covid-sc-estimativa", fileopt = "overwrite")}
+
+```
+
+
 ## Códigos
 
 Os códigos utilizados e análises estão disponíveis em https://github.com/dpavancini/covid19.
