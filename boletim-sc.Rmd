@@ -87,7 +87,7 @@ Olhando para o estado de Santa Catarina, com dados disponibilizados pelas [Secre
 ## api for update data of Covid19 cases
 read_CityDataCovid <- function() {
   # read api url for update  
-  url <- "https://brasil.io/api/dataset/covid19/caso/data?format=json"
+  url <- "https://brasil.io/api/dataset/covid19/caso/data/?"
   tf <- GET(url)
   
   content <- httr::content(tf, as = 'text')
@@ -178,9 +178,14 @@ make_plot_appear <- function(i, maxi=N){
     scale_color_manual(name="",values=c(rgb(103,180,75, maxColorValue = 256),"#f37735","#27408b"))+
     theme(text = element_text(color = "#27408b"))+
     geom_vline(aes(xintercept= as.Date('2020-03-23')),ialpha=0.95, linetype=2,color="grey")+ 
-    geom_text(aes(x = as.Date('2020-03-22'), label = "Início da quarentena em SC (23/03)", y = 500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=10))+
+    geom_text(aes(x = as.Date('2020-03-22'), label = "Início da quarentena em SC (23/03)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=10))+
     geom_vline(aes(xintercept= as.Date('2020-04-13')),alpha=0.95, linetype=2,color="grey")+
-    geom_text(aes(x = as.Date('2020-04-12'), label = "Início da liberação do comércio em SC (13/04)", y = 500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
+    geom_text(aes(x = as.Date('2020-04-12'), label = "Início da liberação do comércio em SC (13/04)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
+    # geom_rect(aes(xmin=as.Date('2020-04-28'), xmax=as.Date('2020-04-30'), ymin=-Inf, ymax=Inf), alpha=0.3)+
+    geom_vline(aes(xintercept= as.Date('2020-04-28')),alpha=0.95, linetype=2,color="grey")+
+    geom_text(aes(x = as.Date('2020-04-27'), label = "Mudança na metodologia de contagem de casos (28/04)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
+    geom_vline(aes(xintercept= as.Date('2020-05-01')),alpha=0.95, linetype=2,color="grey")+
+    geom_text(aes(x = as.Date('2020-04-30'), label = "Casos duplicados desconsiderados (01/05)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
     labs(y="Número de casos", x="Data",
          title="Casos de COVID-19 confirmados em Santa Catarina",
          subtitle=paste("Dados atualizados em: ",format(Sys.time(), "%d/%m/%Y")),
@@ -261,7 +266,8 @@ map_100k <- leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabi
                   title = "Casos confirmados por<br>100k habitantes", 
                   pal = pal, 
                   values = ~confirmed_per_100k_inhabitants, 
-                  opacity = 0.8)
+                  opacity = 0.8) %>%
+  setView(lat = -27.557673, lng = -50.470685, zoom = 7)
 
 map_100k
 htmlwidgets::saveWidget(map_100k,"map_100k.html")
@@ -307,7 +313,7 @@ p_lin <- data %>%
                            "Óbitos Confirmados:", deaths, "<br>",
                            "Dias desde o 10º caso: ",days_from_10th))
          ) + 
-  geom_line(size=0.9)+
+  geom_line(size=0.8)+
   xlab("Dias desde 10º caso") + 
   ylab("Casos confirmados")+ 
   theme_minimal()+ 
@@ -318,7 +324,9 @@ p_casos_cidade_sc <- p_lin %>% ggplotly(tooltip = c("text")) %>% custom_layout(p
                                                             "Em escala linear",
                                                            paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y")))
 )
+
 p_casos_cidade_sc
+
 # Upload to chart studio
 if (prod == TRUE) {api_create(p_casos_cidade_sc, filename = "covid-sc-citylin", fileopt = "overwrite")}
 
@@ -485,9 +493,10 @@ p_obt <- ggplot(data_SC_state,aes(x = date)) +
                 x = "Data",
                 colour = "Parâmetro")
 
-p_obt_lin <- p_obt %>% ggplotly(dynamicTicks = TRUE, tooltip = c("text"))%>% custom_layout(paste("<b>Evolução de número de óbitos</b>"),
-                                                            "Em escala linear",
-                                                           paste0("Fonte: Secretaria de Saúde de SC.", paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))))
+p_obt_lin <- p_obt %>% ggplotly(dynamicTicks = TRUE, tooltip = c("text"))%>% 
+  custom_layout(paste("<b>Evolução de número de óbitos</b>"),"Em escala linear",
+                                                           paste0("Fonte: Secretaria de Saúde de SC.",
+                                                           paste("Atualizado:",format(Sys.time(), "%d/%m/%Y"))))
 
 p_obt_lin
 
@@ -501,31 +510,36 @@ if (prod == TRUE) {api_create(p_obt_lin, filename = "covid-sc-deaths", fileopt =
 #the rates is taken from https://www.worldometers.info/coronavirus/#countries
 x_seq <- data_SC_state %>% 
   mutate(
+    y_est_06 = deaths/0.006, # estimativa com taxa de mortalidade basileria (0.0675)
     y_est_10 = deaths/0.010, # estimativa com taxa de mortalidade autraliana (0.0124)
     y_est_15 = deaths/0.015, # estimativa com taxa de mortalidade chilena (0.0142)
-    y_est_40 = deaths/0.040, # estimativa com taxa de mortalidade alemã (0.0378)
     y_est_20 = deaths/0.020, # estimativa com taxa de mortalidade koréia do sul (0.0226)
-    y_est_08 = deaths/0.008 # estimativa com taxa de mortalidade basileria (0.0675)
-     )
+    y_est_40 = deaths/0.040 # estimativa com taxa de mortalidade alemã (0.0378) 
+    )
 
 p_log <- x_seq %>% 
   ggplot(aes(x=days_from_10th, y=confirmed)) + geom_line(size=0.9) +
-  geom_line(size=0.9) +
+  geom_line(size=0.9, color = "red") +
   geom_line(aes(x=days_from_10th,y=y_est_40),data=x_seq, color = "grey") +
+  geom_text(aes(x = last(x_seq$days_from_10th)-3, y = last(x_seq$y_est_40)[1], label = "Caso seja 4%"), 
+             hjust = 0, vjust = 0.5, colour = "#5A5A5A", size = 4) +
   geom_line(aes(x=days_from_10th,y=y_est_20),data=x_seq, color = "grey") +
-  geom_line(aes(x=days_from_10th,y=y_est_15),data=x_seq, color = "grey")  +
-  geom_line(aes(x=days_from_10th,y=y_est_10),data=x_seq, color = "grey")  +
-  xlab("Dias desde 10º caso") + ylab("Número de casos")+ theme_minimal() + 
-  annotate("text", x = c(last(x_seq$days_from_10th),last(x_seq$days_from_10th),last(x_seq$days_from_10th),last(x_seq$days_from_10th)), 
-           y = c(max(x_seq$y_est_40),max(x_seq$y_est_20),max(x_seq$y_est_15),max(x_seq$y_est_10)), 
-           label = c("4%","2%","1,5%","1%"), 
-           size=3, color = "grey",vjust=-1) + 
-  theme(legend.position="bottom") +
-  scale_color_discrete(name="")
-  
+  geom_text(aes(x = last(x_seq$days_from_10th)-3, y = max(x_seq$y_est_20), label = "Caso seja 2%"), 
+             hjust = 0, vjust = 0.5, colour = "#5A5A5A", size = 4) +
+  geom_line(aes(x=days_from_10th,y=y_est_10),data=x_seq, color = "grey") +
+  geom_text(aes(x = last(x_seq$days_from_10th)-3, y = max(x_seq$y_est_10), label = "Caso seja 1%"), 
+             hjust = 0, vjust = 0.5, colour = "#5A5A5A", size = 4) +
+  geom_line(aes(x=days_from_10th,y=y_est_06),data=x_seq, color = "grey") +
+  geom_text(aes(x = last(x_seq$days_from_10th)-10, y = last(x_seq$y_est_06)[1], 
+                label = "Cálculo do total de casos, \ncaso a taxa de mortalidade seja de 0,6%"), 
+             hjust = 0, vjust = 0.5, colour = "#5A5A5A",size = 4) +
+  xlab("Dias desde 10º caso") + ylab("Número de casos")+ theme_minimal() +
+  geom_text(aes(x = last(x_seq$days_from_10th)-10, y = 400, label = "Número de casos oficiais \nno estado de SC"), 
+                           hjust = 0, vjust = 0.5, colour = "red", size = 4)
+
 estimativa_p <- p_log %>% ggplotly(tooltip = NULL) %>% 
   custom_layout(paste("<b>Estimativas da quantidade provável de casos em SC, com base na taxa de óbitos.</b>"),"Em escala linear",
-                paste0(" \n Atualizado:",format(Sys.time(), "%d/%m/%Y")))
+                paste0(" \n Atualizado:",format(Sys.time(), "%d/%m/%Y"))) 
 
 estimativa_p
 
