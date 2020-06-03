@@ -178,14 +178,14 @@ make_plot_appear <- function(i, maxi=N){
     scale_color_manual(name="",values=c(rgb(103,180,75, maxColorValue = 256),"#f37735","#27408b"))+
     theme(text = element_text(color = "#27408b"))+
     geom_vline(aes(xintercept= as.Date('2020-03-23')),ialpha=0.95, linetype=2,color="grey")+ 
-    geom_text(aes(x = as.Date('2020-03-22'), label = "Início da quarentena em SC (23/03)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=10))+
+    geom_text(aes(x = as.Date('2020-03-22'), label = "Início da quarentena em SC (23/03)", y = 5000), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=10))+
     geom_vline(aes(xintercept= as.Date('2020-04-13')),alpha=0.95, linetype=2,color="grey")+
-    geom_text(aes(x = as.Date('2020-04-12'), label = "Início da liberação do comércio em SC (13/04)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
+    geom_text(aes(x = as.Date('2020-04-12'), label = "Início da liberação do comércio em SC (13/04)", y = 5000), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
     # geom_rect(aes(xmin=as.Date('2020-04-28'), xmax=as.Date('2020-04-30'), ymin=-Inf, ymax=Inf), alpha=0.3)+
     geom_vline(aes(xintercept= as.Date('2020-04-28')),alpha=0.95, linetype=2,color="grey")+
-    geom_text(aes(x = as.Date('2020-04-27'), label = "Mudança na metodologia de contagem de casos (28/04)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
+    geom_text(aes(x = as.Date('2020-04-27'), label = "Mudança na metodologia de contagem de casos (28/04)", y = 5000), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
     geom_vline(aes(xintercept= as.Date('2020-05-01')),alpha=0.95, linetype=2,color="grey")+
-    geom_text(aes(x = as.Date('2020-04-30'), label = "Casos duplicados desconsiderados (01/05)", y = 1500), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
+    geom_text(aes(x = as.Date('2020-04-30'), label = "Casos duplicados desconsiderados (01/05)", y = 5000), colour = "grey",angle=90,  vjust =0.5, text=element_text(size=9.5))+
     labs(y="Número de casos", x="Data",
          title="Casos de COVID-19 confirmados em Santa Catarina",
          subtitle=paste("Dados atualizados em: ",format(Sys.time(), "%d/%m/%Y")),
@@ -222,12 +222,24 @@ Total de casos de Covid-19 confirmados nas cidades catarinenses:
 map_total_cases <- leaflet(last_data, width = "100%") %>% addTiles() %>%
   addProviderTiles(providers$CartoDB.Positron) %>% 
   addCircleMarkers(
-    radius = ~sqrt(last_data$confirmed) * 2,
+    radius = ~sqrt(last_data$confirmed),
     fillOpacity = 0.5, stroke = F, 
     popup = paste0("<b>Cidade: </b>", last_data$city,"<br>",
                    "<b>Casos Confirmados: </b>", last_data$confirmed),
-    label = ~city
-  )
+    label = ~city,
+    group = "Casos"
+  ) %>% 
+  addCircleMarkers(
+    radius = ~sqrt(last_data$deaths)*3,
+    color = "Red",
+    fillOpacity = 0.5, stroke = F, 
+    popup = paste0("<b>Cidade: </b>", last_data$city,"<br>",
+                   "<b>Óbitos Confirmados: </b>", last_data$deaths),
+    label = ~city,
+    group = "Óbitos"
+  ) %>% 
+  addLayersControl(baseGroups = c("Casos","Óbitos"),
+                    options = layersControlOptions(collapsed = FALSE))
 
 map_total_cases 
 #Export map
@@ -243,8 +255,9 @@ htmlwidgets::saveWidget(map_total_cases,"map_total_cases.html")
 Total de casos de Covid-19 confirmados por 100 mil habitantes nas cidades catarinenses:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 ## create the colors quantiles
-pal <- colorNumeric(palette = "Reds", domain = shp_sf_last_data$confirmed_per_100k_inhabitants)
-
+shp_sf_last_data$deaths_per_100k_inhabitants <- (shp_sf_last_data$deaths / shp_sf_last_data$estimated_population_2019) * 100000
+pal <- colorNumeric(palette = "Blues", domain = shp_sf_last_data$confirmed_per_100k_inhabitants)
+pal2 <- colorNumeric(palette = "Reds", domain = shp_sf_last_data$deaths_per_100k_inhabitants)
 # plot heatmap of Covid-19 cases in SC
 map_100k <- leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabitants), confirmed >0), width = "100%") %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
@@ -271,6 +284,33 @@ map_100k <- leaflet(shp_sf_last_data %>% filter(!is.na(confirmed_per_100k_inhabi
 
 map_100k
 htmlwidgets::saveWidget(map_100k,"map_100k.html")
+
+map_100k_deaths <- leaflet(shp_sf_last_data %>% filter(!is.na(deaths_per_100k_inhabitants), deaths >0), width = "100%") %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(data = shp_sf_last_data,
+              smoothFactor = 0.5,
+              fillOpacity = 0.5,
+              weight = 0.5,
+              color = ~pal2(deaths_per_100k_inhabitants),
+              opacity = 0.8,
+              highlightOptions = highlightOptions(color = "black",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              popup = ~paste0(sep = " ",
+                             "<b>Cidade: </b>", city, "<br>",
+                             "<b>Óbitos confrmados: </b>", deaths, "<br>",
+                             "<b>Óbitos por 100k habitantes: </b>", deaths_per_100k_inhabitants),
+              label = ~city) %>% 
+        addLegend("bottomright",
+                  title = "Óbitos confirmados por<br>100k habitantes", 
+                  pal = pal2, 
+                  values = ~deaths_per_100k_inhabitants, 
+                  opacity = 0.8) %>%
+  setView(lat = -27.557673, lng = -50.470685, zoom = 7)
+
+map_100k_deaths
+htmlwidgets::saveWidget(map_100k_deaths,"map_100k_deaths.html")
+
 ```
 
 \ 
